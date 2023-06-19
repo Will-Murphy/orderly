@@ -1,0 +1,48 @@
+{
+    "restaurant": "Grand Slam Deli",
+    "menu": {
+        "subs": {
+            "Babe Ruth": 7.5,
+            "Hank Aaron": 8.0,
+            "Willie Mays": 7.5,
+            "Ted Williams": 8.5,
+            "Mickey Mantle": 8.0
+        },
+        "pizzas": {
+            "Cheese Pizza": 12.0,
+            "Pepperoni Pizza": 14.0,
+            "Vegetarian Pizza": 13.0,
+            "Meat Lovers Pizza": 15.0,
+            "BBQ Chicken Pizza": 15.0
+        },
+        "calzones": {
+            "Cheese Calzone": 10.0,
+            "Pepperoni Calzone": 12.0,
+            "Vegetarian Calzone": 11.0,
+            "Meat Lovers Calzone": 13.0
+        },
+        "pasta": {
+            "Spaghetti Marinara": 10.0,
+            "Fettuccine Alfredo": 11.0,
+            "Penne Arrabbiata": 10.5,
+            "Lasagna": 12.0
+        },
+        "drinks": {
+            "Soda": 2.0,
+            "Iced Tea": 2.5,
+            "Lemonade": 2.5,
+            "Bottled Water": 1.5
+        },
+        "sides": {
+            "Fries": 3.0,
+            "Onion Rings": 4.0,
+            "Garlic Bread": 3.5,
+            "Side Salad": 3.5
+        }
+    }
+}
+
+
+
+
+

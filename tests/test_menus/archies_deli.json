@@ -1,0 +1,53 @@
+{
+    "restaurant": "Archie's New York Deli",
+    "menu": {
+        "breakfast items": {
+            "Plain Bagel": 2.5,
+            "Bagel with Cream Cheese": 3.0,
+            "Fruit Yogurt Parfait": 4.5,
+            "Oatmeal": 4.0,
+            "Granola with Berries": 5.0,
+            "Eggs Benedict": 8.0,
+            "French Toast": 7.0,
+            "Pancakes": 6.5,
+            "Waffles": 6.5,
+            "Toast with Jam": 2.5,
+            "Veggie Omelette": 7.5,
+            "Cheese Omelette": 7.0,
+            "Ham and Cheese Omelette": 8.0,
+            "Yahoos": {
+                "Yahoo with Bacon": 9.0,
+                "Yahoo with Sausage": 9.0,
+                "Yahoo with Ham": 9.0,
+                "Yahoo with Turkey": 9.0,
+                "Yahoo with Pepperoni": 9.0
+            }
+        },
+        "coffee": {
+            "Espresso": 2.5,
+            "Americano": 2.5,
+            "Cappuccino": 3.0,
+            "Latte": 3.5,
+            "Mocha": 4.0,
+            "Macchiato": 3.0,
+            "Iced Coffee": 2.5,
+            "Cold Brew": 3.0,
+            "Hot Chocolate": 3.0,
+            "Chai Latte": 3.5,
+            "Green Tea": 2.5,
+            "Black Tea": 2.5,
+            "Herbal Tea": 2.5
+        },
+        "sides": {
+            "Hash Browns": 3.0,
+            "Sausage Links": 4.0,
+            "Bacon": 4.0,
+            "Grilled Tomatoes": 2.5,
+            "Toast": 2.0,
+            "Mixed Fruit": 4.0,
+            "Biscuits": 3.0,
+            "Muffins": 3.5,
+            "Croissants": 3.5
+        }
+    }
+}

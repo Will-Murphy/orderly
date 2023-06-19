@@ -1,0 +1,7 @@
+# TODO:
+# - run process order in a while loop until user signifies they are done / pays
+#   - don't send full menu each time, only initial request. With saved context we could
+#     just save the menu in saved model state for each context
+# - add an extra notes section to each menu item the user requests
+# - add a "special instructions" section to the end of the order
+# - repeat this all back to the user and ask if it's correct
