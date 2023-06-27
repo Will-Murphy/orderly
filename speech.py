@@ -1,6 +1,4 @@
-import os
 import subprocess
-from logger import Logger
 import speech_recognition as sr
 from gtts import gTTS
 

@@ -5,3 +5,4 @@
 # - add an extra notes section to each menu item the user requests
 # - add a "special instructions" section to the end of the order
 # - repeat this all back to the user and ask if it's correct
+# - build a function for "is user done with order"

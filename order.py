@@ -16,13 +16,16 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
 
 TEST_MENU_DIR = "tests/test_menus"
 
+USE_FUNCTION_CALLS = True
+
 logger = Logger("order_logger")
+
 
 class OrderProcessingError(Exception):
     pass
 
 
-def interact_with_user(msg: str, speak=False, mock=False) -> str:
+def interact_with_user(msg: str, speak=False) -> str:
     print(msg)
     if speak:
         speek(msg)
@@ -54,7 +57,7 @@ class Item:
     name: str
     details: List[str]
     quantity: int
-
+    
     def __hash__(self) -> int:
         return hash((self.name, (hash(x for x in self.details) or 0), self.quantity))
 
@@ -85,56 +88,66 @@ class Order:
                 continue
             else:
                 unit_price = self.menu.flat_menu_items[item.name]
+                
+                print(f"WSM {unit_price=} {item.quantity=} ")
+
                 subtotal = unit_price * item.quantity
                 
+
                 item_subtotal = self.processed_order[item][0] + subtotal
                 item_count = self.processed_order[item][1] + item.quantity
-                
+
                 self.processed_order[item] = (item_subtotal, item_count)
-                
+
                 self.total_price += subtotal
 
     @classmethod
-    def from_api_reponse(cls, response: str, menu: Menu) -> "Order":
-        try:
-            order_kwargs = ast.literal_eval(response)
+    def from_api_reponse(cls, response, menu: Menu) -> "Order":
+            if USE_FUNCTION_CALLS:
+                reply_content = response.choices[0].message
+                string_order_kwargs = reply_content.to_dict()["function_call"][
+                    "arguments"
+                ]
+                order_kwargs = json.loads(string_order_kwargs)
+            else:
+                string_order_kwargs = response.choices[0].text.strip("\n").strip()
+                order_kwargs = ast.literal_eval(response)
             return Order(menu=menu, **order_kwargs)
-        except Exception as e:
-            print(e)
-            raise OrderProcessingError(
-                f"Error processing order {response}, please try again"
-            )
 
     @classmethod
-    def get_initial_prompt(cls, user_input: str, menu: Menu):
-        high_level_desc = (
+    def get_initial_prompt(
+        cls, user_input: str, menu: Menu, using_func_calls=USE_FUNCTION_CALLS
+    ):
+        prompt = (
             f"I have a customer order from the following menu \n: {menu.full_detail}\n"
             f"The order contains the following items: '{user_input}'. \n"
-            f"Translate this into a python dictonary using single quoted keys where the first \n"
-            f"key is '{Order.HUMAN_RESPONSE}', the second key is '{Order.MENU_ITEMS}''. \n"
         )
 
-        specific_values_desc = (
-            f"The following describes the values of these items: \n\n"
-            f" - '{Order.HUMAN_RESPONSE}' is a witty and charming response to the customers order, with any single quotes "
-            f"   character escaped \n"
-            f" - '{Order.MENU_ITEMS}' is a python list of dictionarys containing information aboout each item mentioned. "
-            f"   Each of these nested dictionaries has keys '{Item.NAME}', '{Item.QAUNTITY}' and '{Item.DETAILS}' \n"
-            f"   which map to the following values: \n"
-            f"    - '{Item.NAME}' is an item name that from ONLY the innermost key name of each menu item mentioned with the greatest \n"
-            f"    specificity item \n"
-            f"    - '{Item.QAUNTITY}' is an integer value of the number of times this specific item was mentioned \n"
-            f"    - '{Item.DETAILS}' is list of string values containing any additional details about the menu items \n"
-        )
+        if not using_func_calls:
+            specific_values_desc = (
+                f"Translate this into a python dictonary using single quoted keys where the first \n"
+                f"key is '{Order.HUMAN_RESPONSE}', the second key is '{Order.MENU_ITEMS}''. \n"
+                f"The following describes the values of these items: \n\n"
+                f" - '{Order.HUMAN_RESPONSE}' is a witty and charming response to the customers order, with any single quotes "
+                f"   character escaped \n"
+                f" - '{Order.MENU_ITEMS}' is a python list of dictionarys containing information aboout each item mentioned. "
+                f"   Each of these nested dictionaries has keys '{Item.NAME}', '{Item.QAUNTITY}' and '{Item.DETAILS}' \n"
+                f"   which map to the following values: \n"
+                f"    - '{Item.NAME}' is an item name that from ONLY the innermost key name of each menu item mentioned with the greatest \n"
+                f"    specificity item \n"
+                f"    - '{Item.QAUNTITY}' is an integer value of the number of times this specific item was mentioned \n"
+                f"    - '{Item.DETAILS}' is list of string values containing any additional details about the menu items \n"
+            )
 
-        further_intructions = (
-            f"\nDon't include any other text besides the above in your response besides the python dictionary. \n"
-            f"\nStore each individual item, even if there are multiple of the same, as unique entries in '{Order.MENU_ITEMS}'\n"
-            f"\nAll string dictionary values should be single quoted. \n"
-            f"\nAny strings you generate with the single quote character should be character escaped. \n"
-        )
+            further_intructions = (
+                f"\nDon't include any other text besides the above in your response besides the python dictionary. \n"
+                f"\nStore each individual item, even if there are multiple of the same, as unique entries in '{Order.MENU_ITEMS}'\n"
+                f"\nAll string dictionary values should be single quoted. \n"
+                f"\nAny strings you generate with the single quote character should be character escaped. \n"
+            )
+            prompt += specific_values_desc + further_intructions
 
-        return high_level_desc + specific_values_desc + further_intructions
+        return prompt
 
     def get_human_order_summary(self, speech_only=False) -> str:
         hpo = f"Your order is listed below: \n"
@@ -162,7 +175,7 @@ class Order:
             speek(self.human_response + self.get_human_order_summary(speech_only=True))
 
 
-def get_api_response(
+def get_completion_response(
     prompt: str,
     engine="text-davinci-003",
     temperature=0.5,
@@ -182,25 +195,86 @@ def get_api_response(
     )
 
 
-def process_order(user_input: str, menu: Menu, speak=False, mock=False) -> Order:
-    initial_prompt = Order.get_initial_prompt(user_input, menu)
+def get_function_completion_response(
+    prompt: str,
+):
+    completion = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo-0613",
+        messages=[{"role": "user", "content": prompt}],
+        functions=[
+            {
+                "name": "get_user_order",
+                "description": "Gets a users order for a given menu from their spoken request",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        f"{Order.MENU_ITEMS}": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    f"{Item.NAME}": {
+                                        "type": "string",
+                                        "description": "key from ONLY the innermost keys of each menu item mentioned with the greatest specificity item",
+                                    },
+                                    f"{Item.QAUNTITY}": {
+                                        "type": "number",
+                                        "description": "The quantity of the item.",
+                                    },
+                                    f"{Item.DETAILS}": {
+                                        "type": "array",
+                                        "description": "Array of item details.",
+                                        "items": {"type": "string"},
+                                    },
+                                },
+                                "required": [
+                                    f"{Item.NAME}",
+                                    f"{Item.QAUNTITY}",
+                                    f"{Item.DETAILS}",
+                                ],
+                            },
+                        },
+                        f"{Order.HUMAN_RESPONSE}": {
+                            "type": "string",
+                            "description": "A CREATIVE, WIITY GREETING TO THE CUSTOMER",
+                        },
+                    },
+                    "required": [f"{Order.MENU_ITEMS}", f"{Order.HUMAN_RESPONSE}"],
+                },
+            }
+        ],
+        function_call={"name": "get_user_order"},
+    )
+    return completion
+
+
+def process_order(
+    user_input: str,
+    menu: Menu,
+    speak=False,
+    mock=False,
+    using_func_calls=USE_FUNCTION_CALLS,
+) -> Order:
+    initial_prompt = Order.get_initial_prompt(
+        user_input, menu, using_func_calls=using_func_calls
+    )
     logger.debug(f"\nInitial prompt: \n {initial_prompt}\n")
 
-    response = get_api_response(initial_prompt, mock=mock)
+    response = get_function_completion_response(initial_prompt)
     logger.debug(f"API response: \n{response}\n")
 
     max_retries = 2
     attempt = 0
     while attempt < max_retries:
         try:
-            raw_order = response.choices[0].text.strip("\n").strip()
-            logger.debug(f"Raw Order: \n {raw_order} \n Attempt: {attempt} \n")
+            logger.debug(f"Raw Order: \n {response} \n Attempt: {attempt} \n")
 
-            order = Order.from_api_reponse(raw_order, menu)
+            order = Order.from_api_reponse(response, menu)
             logger.debug(f"Input Order: \n {order} \n")
 
         except Exception as e:
-            logger.error(f"Error processing order: {e}")
+            # print full error message
+            logger.error(f"Error processing order: {str(e)}")
 
             attempt += 1
             error_message = (
@@ -209,7 +283,7 @@ def process_order(user_input: str, menu: Menu, speak=False, mock=False) -> Order
             )
             retry_prompt = f"{initial_prompt} \n {error_message}"
 
-            response = get_api_response(retry_prompt)
+            response = get_function_completion_response(retry_prompt)
 
             interact_with_user(f"Processing your order, please wait... \n", speak)
         else:
@@ -220,7 +294,9 @@ def process_order(user_input: str, menu: Menu, speak=False, mock=False) -> Order
             f"Sorry, we were unable to process your order. Please contact an employee for help.",
             speak,
         )
-        raise OrderProcessingError(f"Unable to process order after {max_retries} attempt")
+        raise OrderProcessingError(
+            f"Unable to process order after {max_retries} attempt"
+        )
 
     return order
 
