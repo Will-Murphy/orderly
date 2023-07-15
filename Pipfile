@@ -8,6 +8,8 @@ openai = "*"
 speechrecognition = "*"
 pyaudio = "*"
 gtts = "*"
+selenium = "*"
+webdriver-manager = "*"
 
 [dev-packages]
 
