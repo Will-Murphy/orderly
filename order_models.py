@@ -87,6 +87,7 @@ def human_item_list(items: List[Item]):
 class Order(AbstractOrderData):
     HUMAN_RESPONSE = "human_response"
     MENU_ITEMS = "menu_items"
+    UNRECOGNIZED_ITEMS = "unrecognized_items"
     MENU_ITEM_DETAILS = "menu_item_details"
     COMPLETED = "completed"
 
@@ -117,7 +118,11 @@ class Order(AbstractOrderData):
         self.process()
 
     def process(self):
-        self.menu_items = [Item(**item_args) for item_args in self.menu_items]
+        def to_item(dict_items: List[Dict]):
+            return [Item(**item_args) for item_args in dict_items]
+
+        self.menu_items = to_item(self.menu_items)
+        self.unrecognized_items = to_item(self.unrecognized_items)
 
         for item in self.menu_items:
             if item.name not in self.menu.flat_menu_items.keys():
@@ -200,6 +205,9 @@ class Order(AbstractOrderData):
         speek(self.human_response + self.get_human_order_summary(speech_only=True))
 
 
+# TODO: break these down, can attatch a schema to objects!! will work great for menu processing!!
+# finding the for that schema is hard though.....
+# TODO: add suspected items...
 ORDER_FUNCTIONS = {
     "process_user_order": {
         "name": "process_user_order",
@@ -219,6 +227,33 @@ ORDER_FUNCTIONS = {
                             f"{Item.NAME}": {
                                 "type": "string",
                                 "description": "key from ONLY the innermost keys of each menu item mentioned with the greatest specificity item",
+                            },
+                            f"{Item.QAUNTITY}": {
+                                "type": "number",
+                                "description": "The quantity of the item.",
+                            },
+                            f"{Item.DETAILS}": {
+                                "type": "array",
+                                "description": "Array of item details.",
+                                "items": {"type": "string"},
+                            },
+                        },
+                        "required": [
+                            f"{Item.NAME}",
+                            f"{Item.QAUNTITY}",
+                            f"{Item.DETAILS}",
+                        ],
+                    },
+                },
+                f"{Order.UNRECOGNIZED_ITEMS}": {
+                    "type": "array",
+                    "description": "A structured mapping of items not directly mentioned in the menu.",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            f"{Item.NAME}": {
+                                "type": "string",
+                                "description": "key user mentioned that was not found in the menu.",
                             },
                             f"{Item.QAUNTITY}": {
                                 "type": "number",
@@ -263,6 +298,36 @@ ORDER_FUNCTIONS = {
                             f"{Item.NAME}": {
                                 "type": "string",
                                 "description": "key from ONLY the innermost keys of each menu item mentioned with the greatest specificity item",
+                            },
+                            f"{Item.QAUNTITY}": {
+                                "type": "number",
+                                "description": "The quantity of the item.",
+                            },
+                            f"{Item.DETAILS}": {
+                                "type": "array",
+                                "description": "Array of item details.",
+                                "items": {"type": "string"},
+                            },
+                        },
+                        "required": [
+                            f"{Item.NAME}",
+                            f"{Item.QAUNTITY}",
+                            f"{Item.DETAILS}",
+                        ],
+                    },
+                },
+                f"{Order.UNRECOGNIZED_ITEMS}": {
+                    "type": "array",
+                    "description": (
+                        f"A structured mapping of items not directly mentioned in the menu in the users"
+                        f"clarified response."
+                    ),
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            f"{Item.NAME}": {
+                                "type": "string",
+                                "description": "key user mentioned that was not found in the menu.",
                             },
                             f"{Item.QAUNTITY}": {
                                 "type": "number",
