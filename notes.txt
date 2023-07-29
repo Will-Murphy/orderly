@@ -7,3 +7,16 @@
 # - repeat this all back to the user and ask if it's correct
 # - build a function for "is user done with order"
 # - Better listening/voice software
+# - Build by appending messages so GPT has a better understanding of past convo
+    eg. 
+    import openai
+
+    openai.ChatCompletion.create(
+    model="gpt-3.5-turbo",
+    messages=[
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": "Who won the world series in 2020?"},
+            {"role": "assistant", "content": "The Los Angeles Dodgers won the World Series in 2020."},
+            {"role": "user", "content": "Where was it played?"}
+        ]
+    )

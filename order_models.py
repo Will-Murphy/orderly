@@ -28,7 +28,7 @@ class AbstractOrderData:
 
     def __str__(self):
         return self.__repr__()
-    
+
     def as_dict(self):
         raise NotImplementedError
 
@@ -43,8 +43,7 @@ class Menu(AbstractOrderData):
         self.flat_menu_items = {
             k.title(): v for k, v in get_innermost_items(self.full_detail).items()
         }
-        
-        
+
     def as_dict(self):
         return {
             "restaurant_name": self.restaurant_name,
@@ -138,7 +137,7 @@ class Order(AbstractOrderData):
                 self.processed_order[item] = (item_subtotal, item_count)
 
                 self.total_price += subtotal
-                
+
     def add_clarified_order(self, c_order: "Order"):
         self.processed_order = {**self.processed_order, **c_order.processed_order}
 
@@ -169,7 +168,6 @@ class Order(AbstractOrderData):
         )
 
         return prompt
-
 
     def get_clarification_prompt(self, user_input: str, initial_prompt: str) -> str:
         prompt = (
@@ -250,7 +248,7 @@ ORDER_FUNCTIONS = {
     "clarify_user_order": {
         "name": "clarify_user_order",
         "description": (
-             "Processes a clarification to a users order for a given menu and in order to return both a"
+            "Processes a clarification to a users order for a given menu and in order to return both a"
             f"human readable response, an itemized transaction summary, and whether the order is complete."
         ),
         "parameters": {
@@ -300,3 +298,28 @@ ORDER_FUNCTIONS = {
         },
     },
 }
+
+
+@dataclass
+class SalesAgent:
+    menu: Menu
+
+    def get_function_completion_response(self, prompt: str, fn_name):
+        completion = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo-0613",
+            messages=[
+                {"role": "system", "content": self.get_system_msg()},
+                {"role": "user", "content": prompt},
+            ],
+            functions=[ORDER_FUNCTIONS[fn_name]],
+            function_call={"name": fn_name},
+        )
+        return completion
+
+    def get_system_msg(self):
+        return (
+            f"You are a 'smart' server for {self.menu.restaurant_name} "
+            f"interacting with a customer and mapping their order directly"
+            f"to the following menu items while being friendly and helpful:\n\n"
+            f"{self.menu.full_detail}\n\n"
+        )

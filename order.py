@@ -8,7 +8,7 @@ from typing import DefaultDict, Dict, List, Tuple
 from logger import Logger
 
 import openai
-from order_models import ORDER_FUNCTIONS, Menu, Order, human_item_list
+from order_models import ORDER_FUNCTIONS, Menu, SalesAgent, Order, human_item_list
 from speech import listen, speek
 from tests.mock_reponse import get_mock_response
 from utils import get_innermost_items
@@ -54,29 +54,16 @@ def communicate(msg: str, speak=False, with_response=False) -> str:
         return listen_for()
 
 
-def get_function_completion_response(prompt: str, fn_name):
-    completion = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo-0613",
-        messages=[{"role": "user", "content": prompt}],
-        functions=[ORDER_FUNCTIONS[fn_name]],
-        function_call={"name": fn_name},
-    )
-    return completion
 
 
-def process_order(
-    user_input: str,
-    menu: Menu,
-    speak=False,
-    mock=False,
-    using_func_calls=USE_FUNCTION_CALLS,
-) -> Order:
+def process_order(user_input: str, menu: Menu, speak=False, mock=False) -> Order:
+    sales_agent = SalesAgent(menu)
+    
+    
     initial_prompt = Order.get_initial_prompt(user_input, menu)
     logger.debug(f"\nInitial prompt: \n {initial_prompt}\n")
 
-    response = get_function_completion_response(
-        initial_prompt, "process_user_order"
-    )
+    response = sales_agent.get_function_completion_response(initial_prompt, "process_user_order")
     logger.debug(f"API response: \n{response}\n")
 
     logger.debug(f"Raw Order: \n {response} \n")
@@ -97,7 +84,7 @@ def process_order(
             )
 
             logger.debug(f"\n Clarified prompt: \n {clarficiation_prompt}\n")
-            response = get_function_completion_response(
+            response = sales_agent.get_function_completion_response(
                 clarficiation_prompt, "clarify_user_order"
             )
             logger.debug(f"API response: \n{response}\n")
@@ -121,7 +108,6 @@ def process_order(
         else:
             if completion_attempts > 0:
                 communicate(f"\nThank you for bearing with me! Enjoy your meal!", speak)
-                break
             else:
                 communicate(
                     f"\nThank you for dining with {order.menu.restaurant_name}!", speak
