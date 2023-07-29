@@ -53,6 +53,7 @@ def communicate(msg: str, speak=False, with_response=False) -> str:
     if with_response:
         return listen_for()
 
+
 def get_function_completion_response(prompt: str, fn_name):
     completion = openai.ChatCompletion.create(
         model="gpt-3.5-turbo-0613",
@@ -70,91 +71,61 @@ def process_order(
     mock=False,
     using_func_calls=USE_FUNCTION_CALLS,
 ) -> Order:
-    initial_prompt = Order.get_initial_prompt(
-        user_input, menu, using_func_calls=using_func_calls
-    )
+    initial_prompt = Order.get_initial_prompt(user_input, menu)
     logger.debug(f"\nInitial prompt: \n {initial_prompt}\n")
 
-    response = get_function_completion_response(initial_prompt, "get_initial_user_order")
+    response = get_function_completion_response(
+        initial_prompt, "process_user_order"
+    )
     logger.debug(f"API response: \n{response}\n")
 
-    max_retries = 2
-    attempt = 0
-    while attempt < max_retries:
-        try:
-            logger.debug(f"Raw Order: \n {response} \n Attempt: {attempt} \n")
-
-            order = Order.from_api_reponse(response, menu)
-            logger.debug(f"Input Order: \n {order} \n")
-
-        except Exception as e:
-            # print full error message
-            logger.error(f"Error processing order: {str(e)}")
-
-            attempt += 1
-            error_message = (
-                f"\n Processing of the returned reponse failed with the following error: {e} "
-                + f"\n Please try again. \n"
-            )
-            retry_prompt = f"{initial_prompt} \n {error_message}"
-
-            response = get_function_completion_response(
-                retry_prompt, "get_initial_user_order"
-            )
-
-            communicate(f"Processing your order, please wait... \n", speak)
-        else:
-            # successful parsing
-            break
-    else:
-        communicate(
-            f"Sorry, we were unable to process your order. Please contact an employee for help.",
-            speak,
-        )
-        raise OrderProcessingError(
-            f"Unable to process order after {max_retries} attempt"
-        )
+    logger.debug(f"Raw Order: \n {response} \n")
+    order = Order.from_api_reponse(response, menu)
+    logger.debug(f"Input Order: \n {order} \n")
 
     completion_attempts = 0
     while not order.is_complete():
         if order.unrecognized_items:
-            response =  communicate(
+            user_clar_input = communicate(
                 f"Sorry, we don't have {human_item_list(order.unrecognized_items)}. "
                 f"Can you please be more specific?",
                 speak,
-                with_response=True
+                with_response=True,
             )
             clarficiation_prompt = order.get_clarification_prompt(
-                user_input, initial_prompt
+                user_clar_input, initial_prompt
             )
-            
-            logger.debug(f"\n Clarified prompt: \n {initial_prompt}\n")
-            response = get_function_completion_response(clarficiation_prompt, "get_clarified_order")
+
+            logger.debug(f"\n Clarified prompt: \n {clarficiation_prompt}\n")
+            response = get_function_completion_response(
+                clarficiation_prompt, "clarify_user_order"
+            )
             logger.debug(f"API response: \n{response}\n")
-            
+
             logger.debug(f"Raw Clarfied Order: \n {response} \n")
             clarification_order = Order.from_api_reponse(response, menu)
-            logger.debug(f"Input Clarfied Order: \n {order} \n")
-            
+            logger.debug(f"Clarified Order: \n {clarification_order} \n")
+
             order.add_clarified_order(clarification_order)
+            logger.debug(f"Input Clarfied Order: \n {order} \n")
+
             completion_attempts += 1
-            
+
         if not order.menu_items:
             communicate(
                 f"Sorry, I didn't understand your order. Please try again.",
                 speak,
             )
             return None
-            
+
         else:
             if completion_attempts > 0:
                 communicate(f"\nThank you for bearing with me! Enjoy your meal!", speak)
+                break
             else:
                 communicate(
                     f"\nThank you for dining with {order.menu.restaurant_name}!", speak
                 )
-                
-
 
     return order
 
@@ -199,7 +170,7 @@ def main():
     menu = Menu.from_file(args.menu_name)
 
     logger.debug(f"Menu: {menu} {menu.full_detail} \n")
-    
+
     if args.order:
         user_order = args.order
     else:

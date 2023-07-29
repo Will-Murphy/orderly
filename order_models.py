@@ -3,7 +3,7 @@ import ast
 import json
 import os
 from collections import defaultdict
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, asdict
 from typing import DefaultDict, Dict, List, Tuple
 from logger import Logger
 
@@ -22,13 +22,34 @@ logger = Logger("order_logger")
 
 
 @dataclass
-class Menu:
+class AbstractOrderData:
+    def __repr__(self):
+        return json.dumps(self.as_dict(), indent=4)
+
+    def __str__(self):
+        return self.__repr__()
+    
+    def as_dict(self):
+        raise NotImplementedError
+
+
+@dataclass
+class Menu(AbstractOrderData):
     restaurant_name: str
     full_detail: dict
     flat_menu_items: dict = field(init=False)
 
     def __post_init__(self):
-        self.flat_menu_items = {k.title(): v for k,v in get_innermost_items(self.full_detail).items()}
+        self.flat_menu_items = {
+            k.title(): v for k, v in get_innermost_items(self.full_detail).items()
+        }
+        
+        
+    def as_dict(self):
+        return {
+            "restaurant_name": self.restaurant_name,
+            "full_detail": self.full_detail,
+        }
 
     @classmethod
     def from_file(cls, menu_name: str) -> dict:
@@ -36,9 +57,10 @@ class Menu:
         with open(filename, "r") as f:
             menu = json.load(f)
         return Menu(full_detail=menu, restaurant_name=menu["restaurant"])
-    
+
+
 @dataclass
-class Item:
+class Item(AbstractOrderData):
     NAME = "name"
     DETAILS = "details"
     QAUNTITY = "quantity"
@@ -46,43 +68,55 @@ class Item:
     name: str
     details: List[str]
     quantity: int
-    
+
     def __post_init__(self):
         self.name = self.name.title()
 
     def __hash__(self) -> int:
         return hash((self.name, (hash(x for x in self.details) or 0), self.quantity))
-    
+
+
 def human_item_list(items: List[Item]):
     last = ""
     if len(items) > 3:
         last = f" and {items.pop().name}"
-        
+
     return ", ".join([i.name for i in items]) + last
 
 
-
 @dataclass
-class Order:
+class Order(AbstractOrderData):
     HUMAN_RESPONSE = "human_response"
     MENU_ITEMS = "menu_items"
     MENU_ITEM_DETAILS = "menu_item_details"
-    COMPLETED ="completed"
+    COMPLETED = "completed"
 
     menu: Menu
     human_response: str
     menu_items: List[Item]
 
     unrecognized_items: List[str] = field(default_factory=list)
-    processed_order: DefaultDict[str, Tuple[float, int]] = field(
+    processed_order: DefaultDict[Item, Tuple[float, int]] = field(
         default_factory=lambda: defaultdict(lambda: (0, 0))
     )
     total_price: float = 0.0
     completed: str = False
 
+    def as_dict(self):
+        return {
+            "menu": self.menu.as_dict(),
+            "menu_items": [asdict(m) for m in self.menu_items],
+            "human_response": self.human_response,
+            "processed_order": {k.name: v for k, v in self.processed_order.items()},
+            "total_price": self.total_price,
+            "unrecognized_items": [asdict(m) for m in self.unrecognized_items],
+            "total_price": self.total_price,
+            "completed": self.completed,
+        }
+
     def __post_init__(self):
         self.process()
-                
+
     def process(self):
         self.menu_items = [Item(**item_args) for item_args in self.menu_items]
 
@@ -104,7 +138,15 @@ class Order:
                 self.processed_order[item] = (item_subtotal, item_count)
 
                 self.total_price += subtotal
-     
+                
+    def add_clarified_order(self, c_order: "Order"):
+        self.processed_order = {**self.processed_order, **c_order.processed_order}
+
+        self.unrecognized_items = list(c_order.unrecognized_items)
+
+        self.total_price += c_order.total_price
+        self.completed = c_order.completed
+
     def is_complete(self):
         return self.menu_items and not self.unrecognized_items
 
@@ -120,59 +162,22 @@ class Order:
         return Order(menu=menu, **order_kwargs)
 
     @classmethod
-    def get_initial_prompt(
-        cls, user_input: str, menu: Menu, using_func_calls=USE_FUNCTION_CALLS
-    ):
+    def get_initial_prompt(cls, user_input: str, menu: Menu):
         prompt = (
-            f"I have a customer order from the following menu \n: {menu.full_detail}\n"
-            f"The order contains the following items: '{user_input}'. \n"
+            f"I have a customer order from the following menu: \n {menu.full_detail}\n"
+            f"Here is what the customer has asked for in their own words: \n '{user_input}'. \n"
         )
-
-        if not using_func_calls:
-            specific_values_desc = (
-                f"Translate this into a python dictonary using single quoted keys where the first \n"
-                f"key is '{Order.HUMAN_RESPONSE}', the second key is '{Order.MENU_ITEMS}''. \n"
-                f"The following describes the values of these items: \n\n"
-                f" - '{Order.HUMAN_RESPONSE}' is a witty and charming response to the customers order, with any single quotes "
-                f"   character escaped \n"
-                f" - '{Order.MENU_ITEMS}' is a python list of dictionarys containing information aboout each item mentioned. "
-                f"   Each of these nested dictionaries has keys '{Item.NAME}', '{Item.QAUNTITY}' and '{Item.DETAILS}' \n"
-                f"   which map to the following values: \n"
-                f"    - '{Item.NAME}' is an item name that from ONLY the innermost key name of each menu item mentioned with the greatest \n"
-                f"    specificity item \n"
-                f"    - '{Item.QAUNTITY}' is an integer value of the number of times this specific item was mentioned \n"
-                f"    - '{Item.DETAILS}' is list of string values containing any additional details about the menu items \n"
-            )
-
-            further_intructions = (
-                f"\nDon't include any other text besides the above in your response besides the python dictionary. \n"
-                f"\nStore each individual item, even if there are multiple of the same, as unique entries in '{Order.MENU_ITEMS}'\n"
-                f"\nAll string dictionary values should be single quoted. \n"
-                f"\nAny strings you generate with the single quote character should be character escaped. \n"
-            )
-            prompt += specific_values_desc + further_intructions
 
         return prompt
-    
-    def add_clarified_order(self, c_order: "Order"):
-        self.processed_order = {
-            **self.processed_order, **c_order.processed_order
-        }
-        
-        self.unrecognized_items = list(c_order.unrecognized_items)
-            
-        self.total_price += c_order.total_price
-        self.completed = c_order.completed
-        
-        
-    def get_clarification_prompt(
-        self, user_input: str, initial_prompt: str
-    ) -> str:
+
+
+    def get_clarification_prompt(self, user_input: str, initial_prompt: str) -> str:
         prompt = (
-            f"Based on the following prompt {self.unrecognized_items} were not recognized. \n: \n\n {initial_prompt} \n\n."
-            f"The user has clarified their input with the following: '{user_input}'. \n"
+            f"Some user order items were not understood correctly from this menu: \n\n {self.menu.full_detail} \n\n"
+            f"\n The items that were not recognized from the above menu are: {human_item_list(self.unrecognized_items)}."
+            f"The user has now told use that instead they mean the following: \n '{user_input}'\n"
         )
-        
+
         return prompt
 
     def get_human_order_summary(self, speech_only=False) -> str:
@@ -198,14 +203,18 @@ class Order:
 
 
 ORDER_FUNCTIONS = {
-    "get_initial_user_order": {
-        "name": "get_initial_user_order",
-        "description": "Gets a users order from a given menu from their spoken request",
+    "process_user_order": {
+        "name": "process_user_order",
+        "description": (
+            f"Processes a users order for a given menu in order to return both a"
+            f"human readable response and a itemized transaction summary."
+        ),
         "parameters": {
             "type": "object",
             "properties": {
                 f"{Order.MENU_ITEMS}": {
                     "type": "array",
+                    "description": "A structured mapping to the exact menu items the user has asked for.",
                     "items": {
                         "type": "object",
                         "properties": {
@@ -232,20 +241,24 @@ ORDER_FUNCTIONS = {
                 },
                 f"{Order.HUMAN_RESPONSE}": {
                     "type": "string",
-                    "description": "A CREATIVE, WIITY GREETING TO THE CUSTOMER",
+                    "description": "A CREATIVE, WITTY GREETING TO THE CUSTOMER",
                 },
             },
             "required": [f"{Order.MENU_ITEMS}", f"{Order.HUMAN_RESPONSE}"],
         },
     },
-    "get_clarified_order": {
-        "name": "get_clarified_order",
-        "description": "Gets a clarified user order for a given menu from their original request and a list of unrecognized items",
+    "clarify_user_order": {
+        "name": "clarify_user_order",
+        "description": (
+             "Processes a clarification to a users order for a given menu and in order to return both a"
+            f"human readable response, an itemized transaction summary, and whether the order is complete."
+        ),
         "parameters": {
             "type": "object",
             "properties": {
                 f"{Order.MENU_ITEMS}": {
                     "type": "array",
+                    "description": "A structured mapping to the corrected menu items the user has asked for.",
                     "items": {
                         "type": "object",
                         "properties": {
@@ -269,19 +282,21 @@ ORDER_FUNCTIONS = {
                             f"{Item.DETAILS}",
                         ],
                     },
+                },
                 f"{Order.COMPLETED}": {
                     "type": "boolean",
                     "description": "Whether or not the order has been sufficiently clarified and is ready to be processed.",
-                }
                 },
                 f"{Order.HUMAN_RESPONSE}": {
                     "type": "string",
-                    "description": "A CREATIVE, WIITY RESPONSE TO THE UPDATED ORDER",
+                    "description": "A CREATIVE, WITTY RESPONSE TO THE CLARIFIED ORDER",
                 },
             },
-            "required": [f"{Order.MENU_ITEMS}", f"{Order.HUMAN_RESPONSE}", f"{Order.COMPLETED}"],
+            "required": [
+                f"{Order.MENU_ITEMS}",
+                f"{Order.HUMAN_RESPONSE}",
+                f"{Order.COMPLETED}",
+            ],
         },
     },
 }
-
-
