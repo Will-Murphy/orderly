@@ -1,6 +1,8 @@
 import subprocess
+import pyttsx3
 import speech_recognition as sr
 from gtts import gTTS
+
 
 
 
@@ -39,5 +41,7 @@ def speek(text: str, filename: str = 'order_playback.mp3'):
     
     # Playing the converted file
     subprocess.call(["afplay", filename])
+        
+        
 
     
