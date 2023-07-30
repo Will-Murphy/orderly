@@ -177,12 +177,13 @@ class Order(AbstractOrderData):
         self.processed_order = {**self.processed_order, **c_order.processed_order}
 
         self.unrecognized_items = list(c_order.unrecognized_items)
+        self.human_response = c_order.human_response
 
         self.total_price += c_order.total_price
         self.completed = c_order.completed
 
     def is_complete(self):
-        return self.menu_items and (self.completed or not self.unrecognized_items)
+        return self.completed
 
     @classmethod
     def from_api_reponse(cls, response, menu: Menu) -> "Order":
@@ -208,7 +209,7 @@ class Order(AbstractOrderData):
 
         return prompt
 
-    def get_human_order_summary(self, speech_only=False) -> str:
+    def _get_human_order_summary(self, speech_only=False) -> str:
         hpo = f"Your order is listed below: \n"
 
         if speech_only:
@@ -222,7 +223,7 @@ class Order(AbstractOrderData):
 
         return hpo.strip("/n") if speech_only else hpo
 
-    def to_human_response(self):
+    def to_human_summary(self):
         print(f"{'='*80}\n")
         print(f"{self.human_response} \n")
         print(f"{self.get_human_order_summary()} \n")
@@ -236,7 +237,8 @@ ORDER_FUNCTIONS = {
         "description": (
             f"Processes a users order for a given menu in order to return both a "
             f"human readable response and a itemized transaction summary. Recognized and "
-            f"unrecognized items must be provided as separate lists. "
+            f"unrecognized items must be provided as separate lists. If the order is not "
+            f"yet complete, the user will be prompted to clarify their order."
         ),
         "parameters": {
             "type": "object",
@@ -255,12 +257,20 @@ ORDER_FUNCTIONS = {
                         )
                     },
                 },
+                f"{Order.COMPLETED}": {
+                    "type": "boolean",
+                    "description": "Whether or not the order has been sufficiently clarified and is ready to be finalized.",
+                },
                 f"{Order.HUMAN_RESPONSE}": {
                     "type": "string",
                     "description": "A CREATIVE, WITTY GREETING TO THE CUSTOMER",
                 },
             },
-            "required": [f"{Order.MENU_ITEMS}", f"{Order.HUMAN_RESPONSE}"],
+            "required": [
+                f"{Order.MENU_ITEMS}",
+                f"{Order.HUMAN_RESPONSE}",
+                f"{Order.COMPLETED}",
+            ],
         },
     },
     "clarify_user_order": {
@@ -315,9 +325,16 @@ class SalesAgent:
     menu: Menu
     speak: bool = True
     func_call_model: str = "gpt-4-0613"
-    messages = field(default_factory=list)
+    messages: List[Dict] = field(default_factory=list)
 
-    def get_function_completion_response(self, prompt: str, fn_name):
+    def get_function_completion_response(self, prompt: str, fn_name, with_message_history=False):
+        default_messages = [
+            self.get_system_msg(),
+            {"role": "user", "content": prompt},
+        ]
+        if with_message_history:
+            default_messages.append(self.messages)
+            
         completion = openai.ChatCompletion.create(
             model=self.func_call_model,
             messages=[
@@ -339,9 +356,12 @@ class SalesAgent:
                 f"{self.menu.full_detail}\n\n"
             ),
         }
-        
+
     def add_user_message(self, msg):
         self.messages.append({"role": "user", "content": msg})
+
+    def add_agent_msg(self, msg):
+        self.messages.append({"role": "assistant", "content": msg})
 
     def process_order(self, mock=False) -> Order:
         initial_input = self.communicate(
@@ -351,7 +371,7 @@ class SalesAgent:
 
         self.communicate(f"\n One moment please... \n")
 
-        completion_attempts = 0
+        completion_attempts = 1
 
         initial_prompt = Order.get_initial_prompt(initial_input, self.menu)
         logger.debug(
@@ -367,10 +387,15 @@ class SalesAgent:
         logger.debug(f"Input Order {completion_attempts}: \n {order} \n")
 
         while not order.is_complete():
-            if order.unrecognized_items:
+            if not order.menu_items:
+                retry_input = self.communicate(
+                    order.human_response,
+                    with_response=True,
+                )
+                order = Order.from_api_reponse(retry_input, self.menu)
+            else:
                 user_clar_input = self.communicate(
-                    f"Sorry, we don't have {human_item_list(order.unrecognized_items)}. "
-                    f"Can you please be more specific?",
+                    order.human_response,
                     with_response=True,
                 )
                 clarficiation_prompt = order.get_clarification_prompt(
@@ -379,7 +404,7 @@ class SalesAgent:
 
                 logger.debug(f"\n Clarified prompt: \n {clarficiation_prompt}\n")
                 response = self.get_function_completion_response(
-                    clarficiation_prompt, "clarify_user_order"
+                    clarficiation_prompt, "clarify_user_order", with_message_history=True
                 )
                 logger.debug(f"API response: \n{response}\n")
 
@@ -390,24 +415,10 @@ class SalesAgent:
                 order.add_clarified_order(clarification_order)
                 logger.debug(f"Input Clarfied Order: \n {order} \n")
 
-                completion_attempts += 1
-
-            if not order.menu_items:
-                retry_input = self.communicate(
-                    order.human_,
-                    with_response=True,
-                )
-                order = Order.from_api_reponse(retry_input, self.menu)
-
-            else:
-                if completion_attempts > 0:
-                    self.communicate(
-                        f"\nThank you for bearing with me! Enjoy your meal!"
-                    )
-                else:
-                    self.communicate(
-                        f"\nThank you for dining with {order.menu.restaurant_name}!"
-                    )
+            completion_attempts += 1                
+    
+        self.communicate(f"\n {order.human_response}")
+        order.to_human_summary()
 
         return order
 
@@ -435,5 +446,8 @@ class SalesAgent:
             return response
 
         say(msg)
+        self.add_agent_msg(msg)
         if with_response:
-            return listen_for()
+            user_response = listen_for()
+            self.add_user_message(user_response)
+            return user_response

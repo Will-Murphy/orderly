@@ -60,8 +60,6 @@ def main():
 
     logger.debug(f"Processed Order: {order}")
 
-    order.to_human_response()
-
 
 if __name__ == "__main__":
     main()
