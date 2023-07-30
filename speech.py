@@ -24,7 +24,7 @@ def listen(logger) -> str:
 
 
 
-def speek(text: str, filename: str = 'order_playback.mp3'):
+def speak(text: str, filename: str = 'order_playback.mp3'):
     # Language in which you want to convert
     language = 'en'
     

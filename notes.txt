@@ -7,6 +7,8 @@
 # - repeat this all back to the user and ask if it's correct
 # - build a function for "is user done with order"
 # - Better listening/voice software
+     - Whisper API
+     - other open source libraries
 # - Build by appending messages so GPT has a better understanding of past convo
     eg. 
     import openai
