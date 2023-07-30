@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import datetime
 import json
 import os
@@ -13,7 +15,7 @@ from halo import Halo
 import openai
 from speech import listen, speak
 from tests.mock_reponse import get_mock_response
-from utils import get_innermost_items
+from utils import get_generic_order_waiting_phrases, get_innermost_items
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
@@ -167,8 +169,6 @@ class Order(AbstractOrderData):
             else:
                 unit_price = self.menu.flat_menu_items[item.name]
 
-                print(f"WSM {unit_price=} {item.quantity=} ")
-
                 subtotal = unit_price * item.quantity
 
                 item_subtotal = self.processed_order[item][0] + subtotal
@@ -187,7 +187,7 @@ class Order(AbstractOrderData):
         self.total_price += c_order.total_price
         self.completed = c_order.completed
 
-    def is_complete(self):
+    def is_complete(self) -> bool:
         return self.completed
 
     @classmethod
@@ -197,24 +197,7 @@ class Order(AbstractOrderData):
         order_kwargs = json.loads(string_order_kwargs)
         return Order(menu=menu, **order_kwargs)
 
-    @classmethod
-    def get_initial_prompt(cls, user_input: str, menu: Menu):
-        prompt = f"Here is what the customer has asked for in their own words: \n '{user_input}'. \n"
-
-        return prompt
-
-    def get_clarification_prompt(self, user_input: str, initial_prompt: str) -> str:
-        prompt = (
-            f"Some user order items were not understood correctly "
-            f"The items that were not previously recognized from the above menu are: "
-            f"\n {human_item_list(self.unrecognized_items)}. \n"
-            f"The user has now told use that instead they mean the following: "
-            f"\n '{user_input}'\n"
-        )
-
-        return prompt
-
-    def _get_human_order_summary(self, speech_only=False) -> str:
+    def get_human_order_summary(self, speech_only=False) -> str:
         hpo = f"Your order is listed below: \n"
 
         if speech_only:
@@ -226,14 +209,7 @@ class Order(AbstractOrderData):
 
         hpo += f"\n\nFor a total price of: ${self.total_price} \n"
 
-        return hpo.strip("/n") if speech_only else hpo
-
-    def to_human_summary(self):
-        print(f"{'='*80}\n")
-        print(f"{self.human_response} \n")
-        print(f"{self._get_human_order_summary()} \n")
-        print(f"{'='*80}\n")
-        speak(self.human_response + self._get_human_order_summary(speech_only=True))
+        return hpo.strip("/n") if speech_only else f"\n\n{'='*80}\n" + hpo + f"{'='*80}\n\n"
 
 
 ORDER_FUNCTIONS = {
@@ -337,7 +313,7 @@ class SalesAgent:
         self, prompt: str, fn_name, with_message_history=False
     ):
         default_messages = [
-            self.get_system_msg(),
+            self.get_system_message(),
             {"role": "user", "content": prompt},
         ]
         if with_message_history:
@@ -346,7 +322,7 @@ class SalesAgent:
         completion = openai.ChatCompletion.create(
             model=self.api_model,
             messages=[
-                self.get_system_msg(),
+                self.get_system_message(),
                 {"role": "user", "content": prompt},
             ],
             functions=[ORDER_FUNCTIONS[fn_name]],
@@ -354,7 +330,7 @@ class SalesAgent:
         )
         return completion
 
-    def get_system_msg(self):
+    def get_system_message(self):
         return {
             "role": "system",
             "content": (
@@ -364,59 +340,77 @@ class SalesAgent:
                 f"{self.menu.full_detail}\n\n"
             ),
         }
-
+        
     def add_user_message(self, msg):
         self.messages.append({"role": "user", "content": msg})
 
     def add_agent_message(self, msg):
         self.messages.append({"role": "assistant", "content": msg})
 
-    def waiting_for_api_response(self):
-        order_waiting_phrases = [
-            "One moment please...",
-            "Just a moment...",
-            "Hold on just a second...",
-        ]
-        self.communicate(f"\n {random.choice(order_waiting_phrases)} \n")
+    def get_initial_prompt(self, user_input: str) -> str:
+        prompt = f"Here is what the customer has asked for in their own words: \n '{user_input}'. \n"
+
+        return prompt
+
+    def get_clarification_prompt(self, user_input: str, order: Order) -> str:
+        prompt = (
+            f"Some user order items were not understood correctly "
+            f"The items that were not previously recognized from the above menu are: "
+            f"\n {human_item_list(order.unrecognized_items)}. \n"
+            f"The user has now told use that instead they mean the following: "
+            f"\n '{user_input}'\n"
+        )
+
+        return prompt
 
     def process_order(self, mock=False) -> Order:
+        order = self._intialize_order()
+
+        if not order.is_complete():
+            order = self._clarify_order(order)
+
+        self.communicate(
+            order.human_response,
+            display_summary=order.get_human_order_summary(),
+            speech_summary=order.get_human_order_summary(speech_only=True)
+        )
+
+        return order
+
+    def _intialize_order(self) -> Order:
         initial_input = self.communicate(
             f"Hi, welcome to {self.menu.restaurant_name}. What can I get for you today? \n",
-            with_response=True,
+            get_response=True,
         )
 
-        completion_attempts = 1
-
-        initial_prompt = Order.get_initial_prompt(initial_input, self.menu)
-        logger.debug(
-            f"\nInitial prompt completion {completion_attempts}: \n {initial_prompt}\n"
-        )
+        initial_prompt = self.get_initial_prompt(initial_input)
+        logger.debug(f"\nInitial prompt completion: \n {initial_prompt}\n")
 
         self.waiting_for_api_response()
 
         response = self.get_function_completion_response(
             initial_prompt, "process_user_order"
         )
-        logger.debug(f"API response {completion_attempts}: \n{response}\n")
+        logger.debug(f"API response: \n{response}\n")
 
         order = Order.from_api_reponse(response, self.menu)
-        logger.debug(f"Input Order {completion_attempts}: \n {order} \n")
+        logger.debug(f"Input Order: \n {order} \n")
 
+        return order
+
+    def _clarify_order(self, order: Order) -> Order:
         while not order.is_complete():
             if not order.menu_items:
                 retry_input = self.communicate(
                     order.human_response,
-                    with_response=True,
+                    get_response=True,
                 )
                 order = Order.from_api_reponse(retry_input, self.menu)
             else:
                 user_clar_input = self.communicate(
-                    order.human_response,
-                    with_response=True,
+                    order.human_response, get_response=True, display_summary=order.get_human_order_summary()
                 )
-                clarficiation_prompt = order.get_clarification_prompt(
-                    user_clar_input, initial_prompt
-                )
+                clarficiation_prompt = self.get_clarification_prompt(user_clar_input, order)
 
                 self.waiting_for_api_response()
 
@@ -435,24 +429,30 @@ class SalesAgent:
                 order.add_clarified_order(clarification_order)
                 logger.debug(f"Input Clarfied Order: \n {order} \n")
 
-            completion_attempts += 1
-
-        order.to_human_summary()
-
         return order
 
+    def get_display_summary(self, order: Order):
+        return f"{'='*80}\n" + f"{order.get_human_order_summary()} \n" + f"{'='*80}\n"
+
+    def waiting_for_api_response(self):
+        self.communicate(f"\n {random.choice(get_generic_order_waiting_phrases())} \n")
+
     @Halo(spinner="dots", color="red")
-    def communicate(self, msg: str, with_response=False) -> str:
-        def say(x):
-            print(x + "\n\n")
-            speak(x)
+    def communicate(
+        self,
+        msg: str,
+        get_response=False,
+        display_summary: str = "",
+        speech_summary: str = "",
+    ) -> str | None:
 
         def listen_for() -> str:
             err_msg = "Sorry, I did not get that. Can you please repeat it?"
             if self.speak:
                 response = listen(logger)
                 while not response:
-                    say(err_msg)
+                    print(err_msg + "\n\n")
+                    speak(err_msg)
                     response = listen(logger)
 
             else:
@@ -465,9 +465,12 @@ class SalesAgent:
 
             return response
 
-        say(msg)
+        print(msg + display_summary + "\n\n")
+        speak(msg + speech_summary)
+        
+        
         self.add_agent_message(msg)
-        if with_response:
+        if get_response:
             user_response = listen_for()
             self.add_user_message(user_response)
             return user_response
