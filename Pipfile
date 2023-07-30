@@ -12,6 +12,7 @@ selenium = "*"
 webdriver-manager = "*"
 pyttsx3 = "*"
 pyobjc = "*"
+halo = "*"
 
 [dev-packages]
 

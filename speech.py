@@ -13,8 +13,9 @@ def listen(logger) -> str:
         audio_text = r.listen(source)
         # recoginize_() method will throw a request error if the API is unreachable, hence using exception handling
 
-        response = r.recognize_google(audio_text)
+        response = None
         try:
+            response = r.recognize_google(audio_text)
             # using google speech recognition
             logger.debug(f"Your input was: {response}")
         except Exception as e:

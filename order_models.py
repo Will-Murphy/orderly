@@ -1,11 +1,14 @@
-import argparse
-import ast
+import datetime
 import json
 import os
 from collections import defaultdict
 from dataclasses import dataclass, field, asdict
+import random
 from typing import DefaultDict, Dict, List, Tuple
+from completion_api import ApiModels
 from logger import Logger
+from halo import Halo
+
 
 import openai
 from speech import listen, speak
@@ -18,6 +21,8 @@ TEST_MENU_DIR = "tests/test_menus"
 
 
 logger = Logger("order_logger")
+
+random.seed(datetime.datetime.now())
 
 
 @dataclass
@@ -226,9 +231,9 @@ class Order(AbstractOrderData):
     def to_human_summary(self):
         print(f"{'='*80}\n")
         print(f"{self.human_response} \n")
-        print(f"{self.get_human_order_summary()} \n")
+        print(f"{self._get_human_order_summary()} \n")
         print(f"{'='*80}\n")
-        speak(self.human_response + self.get_human_order_summary(speech_only=True))
+        speak(self.human_response + self._get_human_order_summary(speech_only=True))
 
 
 ORDER_FUNCTIONS = {
@@ -324,19 +329,22 @@ ORDER_FUNCTIONS = {
 class SalesAgent:
     menu: Menu
     speak: bool = True
-    func_call_model: str = "gpt-4-0613"
+    api_model: str = ApiModels.GPT4.value
     messages: List[Dict] = field(default_factory=list)
 
-    def get_function_completion_response(self, prompt: str, fn_name, with_message_history=False):
+    @Halo(spinner="dots", color="green", text="Thinking...")
+    def get_function_completion_response(
+        self, prompt: str, fn_name, with_message_history=False
+    ):
         default_messages = [
             self.get_system_msg(),
             {"role": "user", "content": prompt},
         ]
         if with_message_history:
             default_messages.append(self.messages)
-            
+
         completion = openai.ChatCompletion.create(
-            model=self.func_call_model,
+            model=self.api_model,
             messages=[
                 self.get_system_msg(),
                 {"role": "user", "content": prompt},
@@ -360,8 +368,16 @@ class SalesAgent:
     def add_user_message(self, msg):
         self.messages.append({"role": "user", "content": msg})
 
-    def add_agent_msg(self, msg):
+    def add_agent_message(self, msg):
         self.messages.append({"role": "assistant", "content": msg})
+
+    def waiting_for_api_response(self):
+        order_waiting_phrases = [
+            "One moment please...",
+            "Just a moment...",
+            "Hold on just a second...",
+        ]
+        self.communicate(f"\n {random.choice(order_waiting_phrases)} \n")
 
     def process_order(self, mock=False) -> Order:
         initial_input = self.communicate(
@@ -369,14 +385,14 @@ class SalesAgent:
             with_response=True,
         )
 
-        self.communicate(f"\n One moment please... \n")
-
         completion_attempts = 1
 
         initial_prompt = Order.get_initial_prompt(initial_input, self.menu)
         logger.debug(
             f"\nInitial prompt completion {completion_attempts}: \n {initial_prompt}\n"
         )
+
+        self.waiting_for_api_response()
 
         response = self.get_function_completion_response(
             initial_prompt, "process_user_order"
@@ -402,9 +418,13 @@ class SalesAgent:
                     user_clar_input, initial_prompt
                 )
 
+                self.waiting_for_api_response()
+
                 logger.debug(f"\n Clarified prompt: \n {clarficiation_prompt}\n")
                 response = self.get_function_completion_response(
-                    clarficiation_prompt, "clarify_user_order", with_message_history=True
+                    clarficiation_prompt,
+                    "clarify_user_order",
+                    with_message_history=True,
                 )
                 logger.debug(f"API response: \n{response}\n")
 
@@ -415,13 +435,13 @@ class SalesAgent:
                 order.add_clarified_order(clarification_order)
                 logger.debug(f"Input Clarfied Order: \n {order} \n")
 
-            completion_attempts += 1                
-    
-        self.communicate(f"\n {order.human_response}")
+            completion_attempts += 1
+
         order.to_human_summary()
 
         return order
 
+    @Halo(spinner="dots", color="red")
     def communicate(self, msg: str, with_response=False) -> str:
         def say(x):
             print(x + "\n\n")
@@ -446,7 +466,7 @@ class SalesAgent:
             return response
 
         say(msg)
-        self.add_agent_msg(msg)
+        self.add_agent_message(msg)
         if with_response:
             user_response = listen_for()
             self.add_user_message(user_response)

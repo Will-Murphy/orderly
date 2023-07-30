@@ -2,22 +2,17 @@ import argparse
 import ast
 import json
 import os
-from collections import defaultdict
-from dataclasses import dataclass, field
-from typing import DefaultDict, Dict, List, Tuple
 from logger import Logger
 
 import openai
-from order_models import ORDER_FUNCTIONS, Menu, SalesAgent, Order, human_item_list
-from speech import listen, speak
-from tests.mock_reponse import get_mock_response
-from utils import get_innermost_items
+from order_models import Menu, SalesAgent
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 TEST_MENU_DIR = "tests/test_menus"
 
 logger = Logger("order_logger")
+
 
 def main():
     parser = argparse.ArgumentParser(description="Process a food order.")
@@ -52,10 +47,10 @@ def main():
 
     menu = Menu.from_file(args.menu_name)
 
-    logger.debug(f"Menu: {json.dumps(menu.full_detail, indent=4)} \n")
-    
+    logger.info(f"Menu: {json.dumps(menu.full_detail, indent=4)} \n")
+
     sales_agent = SalesAgent(menu, speak=args.speak)
-    
+
     order = sales_agent.process_order(mock=args.mock)
 
     logger.debug(f"Processed Order: {order}")
