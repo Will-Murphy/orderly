@@ -15,7 +15,8 @@ from halo import Halo
 import openai
 from speech import listen, speak
 from tests.mock_reponse import get_mock_response
-from utils import get_generic_order_waiting_phrases, get_innermost_items
+from utils import get_generic_order_waiting_phrases, get_innermost_items, halo_context
+
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
@@ -310,14 +311,14 @@ class SalesAgent:
 
     @Halo(spinner="dots", color="green", text="Thinking...")
     def get_function_completion_response(
-        self, prompt: str, fn_name, with_message_history=False
+        self, prompt: str, fn_name, with_message_history=True
     ):
         default_messages = [
             self.get_system_message(),
             {"role": "user", "content": prompt},
         ]
         if with_message_history:
-            default_messages.append(self.messages)
+            default_messages.extend(self.messages)
 
         completion = openai.ChatCompletion.create(
             model=self.api_model,
@@ -364,7 +365,11 @@ class SalesAgent:
         return prompt
 
     def process_order(self, mock=False) -> Order:
-        order = self._intialize_order()
+        initial_input = self.communicate(
+            f"Hi, welcome to {self.menu.restaurant_name}. What can I get for you today? \n",
+            get_response=True,
+        )
+        order = self._initialize_order(initial_input)
 
         if not order.is_complete():
             order = self._clarify_order(order)
@@ -377,13 +382,8 @@ class SalesAgent:
 
         return order
 
-    def _intialize_order(self) -> Order:
-        initial_input = self.communicate(
-            f"Hi, welcome to {self.menu.restaurant_name}. What can I get for you today? \n",
-            get_response=True,
-        )
-
-        initial_prompt = self.get_initial_prompt(initial_input)
+    def _initialize_order(self, user_input: str) -> Order:
+        initial_prompt = self.get_initial_prompt(user_input)
         logger.debug(f"\nInitial prompt completion: \n {initial_prompt}\n")
 
         self.waiting_for_api_response()
@@ -405,7 +405,7 @@ class SalesAgent:
                     order.human_response,
                     get_response=True,
                 )
-                order = Order.from_api_reponse(retry_input, self.menu)
+                order = self._initialize_order(retry_input)
             else:
                 user_clar_input = self.communicate(
                     order.human_response, get_response=True, display_summary=order.get_human_order_summary()
@@ -437,7 +437,6 @@ class SalesAgent:
     def waiting_for_api_response(self):
         self.communicate(f"\n {random.choice(get_generic_order_waiting_phrases())} \n")
 
-    @Halo(spinner="dots", color="red")
     def communicate(
         self,
         msg: str,
@@ -445,32 +444,34 @@ class SalesAgent:
         display_summary: str = "",
         speech_summary: str = "",
     ) -> str | None:
-
-        def listen_for() -> str:
-            err_msg = "Sorry, I did not get that. Can you please repeat it?"
-            if self.speak:
-                response = listen(logger)
-                while not response:
-                    print(err_msg + "\n\n")
-                    speak(err_msg)
+        with halo_context(spinner="dots", color="red") as spinner:
+            def listen_for() -> str:
+                err_msg = "Sorry, I did not get that. Can you please repeat it?"
+                if self.speak:
                     response = listen(logger)
+                    while not response:
+                        print(err_msg + "\n\n")
+                        speak(err_msg)
+                        response = listen(logger)
 
-            else:
-                while True:
-                    response = input("waiting for response... \n\n")
-                    if response:  # if the user entered something
-                        break  # exit the loop
-                    else:
-                        input(err_msg)
+                else:
+                    spinner.stop()
+                    while True:
+                        response = input("waiting for response... \n\n")
+                        if response:  # if the user entered something
+                            break  # exit the loop
+                        else:
+                            input(err_msg)
 
-            return response
+                return response
 
-        print(msg + display_summary + "\n\n")
-        speak(msg + speech_summary)
-        
-        
-        self.add_agent_message(msg)
-        if get_response:
-            user_response = listen_for()
-            self.add_user_message(user_response)
-            return user_response
+            print(msg + display_summary + "\n\n")
+            speak(msg + speech_summary)
+            
+            
+            self.add_agent_message(msg)
+            if get_response:
+                user_response = listen_for()
+                logger.info(f"user response: {user_response}")
+                self.add_user_message(user_response)
+                return user_response

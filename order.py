@@ -2,16 +2,13 @@ import argparse
 import ast
 import json
 import os
-from logger import Logger
 
 import openai
-from order_models import Menu, SalesAgent
+from order_models import Menu, SalesAgent, logger
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 TEST_MENU_DIR = "tests/test_menus"
-
-logger = Logger("order_logger")
 
 
 def main():
@@ -46,13 +43,11 @@ def main():
     logger.set_level(args.log_level)
 
     menu = Menu.from_file(args.menu_name)
-
     logger.info(f"Menu: {json.dumps(menu.full_detail, indent=4)} \n")
 
     sales_agent = SalesAgent(menu, speak=args.speak)
 
     order = sales_agent.process_order(mock=args.mock)
-
     logger.debug(f"Processed Order: {order}")
 
 

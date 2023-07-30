@@ -1,4 +1,6 @@
+import contextlib
 from typing import Dict, List
+from halo import Halo
 
 
 def get_innermost_items(d: dict) -> Dict:
@@ -9,6 +11,16 @@ def get_innermost_items(d: dict) -> Dict:
         else:
             innermost_keys[k] = v
     return innermost_keys
+
+
+@contextlib.contextmanager
+def halo_context(*args, **kwargs):
+    spinner = Halo(*args, **kwargs)
+    spinner.start()
+    try:
+        yield spinner
+    finally:
+        spinner.stop()
 
 
 def get_generic_order_waiting_phrases() -> List[str]:
