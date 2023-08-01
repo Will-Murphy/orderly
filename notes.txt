@@ -22,3 +22,9 @@
             {"role": "user", "content": "Where was it played?"}
         ]
     )
+
+
+#TODO Aug 1
+- Implement order finalization
+- Implement Scraping with function calls 
+- Add Priced Order Details to Order Models

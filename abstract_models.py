@@ -27,6 +27,10 @@ class AbstractOrderData:
         raise NotImplementedError
 
     @classmethod
+    def get_schema(cls):
+        raise NotImplementedError
+
+    @classmethod
     def from_api_response(cls, response, **kwargs) -> AbstractOrderData:
         reply_content = response.choices[0].message
         string_order_kwargs = reply_content.to_dict()["function_call"]["arguments"]
