@@ -1,3 +1,4 @@
+import argparse
 from dataclasses import dataclass, field, asdict
 from typing import List
 from abstract_models import AbstractAgent, AbstractOrderData
@@ -32,9 +33,10 @@ logger = Logger("menu_logger")
 @dataclass
 class ItemDetails(AbstractOrderData):
     NAME = "name"
-    PRICE = "price"
+    DETAIL_PRICE = "detail_price"
+
     name: str
-    price: float = 0.0
+    detail_price: float = 0.0
 
     def as_dict(self):
         return asdict(self)
@@ -43,16 +45,17 @@ class ItemDetails(AbstractOrderData):
     def get_schema(cls):
         return {
             "type": "array",
-            "description": "Array of priced item details.",
+            "description": "Array of priced item details. Should only contain information relevant to the item."
+            "Information should not be repeated between the item and items details",
             "items": {
                 "type": "object",
                 "description": "A priced item detail.",
                 "properties": {
                     f"{ItemDetails.NAME}": {"type": "string"},
-                    f"{ItemDetails.PRICE}": {"type": "number"},
+                    f"{ItemDetails.DETAIL_PRICE}": {"type": "number"},
                 },
             },
-            "required": [f"{ItemDetails.NAME}", f"{ItemDetails.PRICE}"],
+            "required": [f"{ItemDetails.NAME}", f"{ItemDetails.DETAIL_PRICE}"],
         }
 
 
@@ -61,17 +64,17 @@ class ScraperItem(AbstractOrderData):
     NAME = "name"
     DETAILS = "details"
     CATEGORY = "category"
-    PRICE = "price"
+    ITEM_PRICE = "item_price"
 
     name: str
     category: str
     details: List[str]
-    price: float
+    item_price: float
 
     def as_dict(self):
         return {
             f"{ScraperItem.NAME}": self.name,
-            f"{ScraperItem.PRICE}": self.price,
+            f"{ScraperItem.ITEM_PRICE}": self.item_price,
             f"{ScraperItem.CATEGORY}": self.category,
             f"{ScraperItem.DETAILS}": [x.as_dict() for x in self.details],
         }
@@ -99,12 +102,12 @@ class ScraperItem(AbstractOrderData):
                     "type": "string",
                     "description": name_desc,
                 },
-                f"{ScraperItem.PRICE}": {
-                    "type": "number",
-                    "description": "The price of the item.",
+                f"{ScraperItem.ITEM_PRICE}": {
+                    "type": ["number", "null"],
+                    "description": "The price of the item. Can be null if details included in the price",
                 },
                 f"{ScraperItem.CATEGORY}": {
-                    "type": "string",
+                    "type": ["string", "null"],
                     "description": "The category of the item.",
                 },
                 f"{ScraperItem.DETAILS}": {
@@ -113,7 +116,7 @@ class ScraperItem(AbstractOrderData):
             },
             "required": [
                 f"{ScraperItem.NAME}",
-                f"{ScraperItem.PRICE}",
+                f"{ScraperItem.ITEM_PRICE}",
                 f"{ScraperItem.CATEGORY}",
                 f"{ScraperItem.DETAILS}",
             ],
@@ -122,28 +125,49 @@ class ScraperItem(AbstractOrderData):
 
 @dataclass
 class ScraperMenu(AbstractOrderData):
+    RESTAURANT_NAME = "restaurant_name"
+    RESTAURANT_ADDRESS = "restaurant_address"
     MENU_ITEMS = "menu_items"
 
+    restaurant_name: str = None
+    restaurant_address: str = None
     menu_items: List[ScraperItem] = field(default_factory=list)
 
     def __post_init__(self, *args, **kwargs):
         self.menu_items = [ScraperItem(**x) for x in self.menu_items]
 
     def as_dict(self):
-        return {f"{ScraperMenu.MENU_ITEMS}": [x.as_dict() for x in self.menu_items]}
+        return {
+            f"{ScraperMenu.MENU_ITEMS}": [x.as_dict() for x in self.menu_items],
+            f"{ScraperMenu.RESTAURANT_NAME}": self.restaurant_name,
+            f"{ScraperMenu.RESTAURANT_ADDRESS}": self.restaurant_address,
+        }
 
     @classmethod
     def get_schema(cls):
         return {
             "type": "object",
             "description": (
-                "Structured list menu items with prices and details extracted from html"
+                "Structured menu with prices and details extracted from html. "
             ),
             "properties": {
                 f"{ScraperMenu.MENU_ITEMS}": {
                     "type": "array",
-                    "description": "Array of menu items extracted from html.",
+                    "description": (
+                        "Array of menu items extracted from html with all fields filled out according the schema."
+                        "Items should ONLY be added to this list if they can meet the menu items detail."
+                        "That is they should have either a price or at least one priced detail or not be "
+                        "added at all. In short, only add items to this list if they can be ordered."
+                    ),
                     "items": ScraperItem.get_schema("item name"),
+                },
+                f"{ScraperMenu.RESTAURANT_NAME}": {
+                    "type": ["string", "null"],
+                    "description": "The name of the restaurant. Only to be filled out if the restaurant name is detected.",
+                },
+                f"{ScraperMenu.RESTAURANT_ADDRESS}": {
+                    "type": ["string", "null"],
+                    "description": "The address of the restaurant. Only to be filled out if the restaurant address is detected.",
                 },
             },
             "required": [
@@ -152,6 +176,10 @@ class ScraperMenu(AbstractOrderData):
         }
 
     def extend_menu(self, other_menu: "ScraperMenu"):
+        self.restaurant_name = self.restaurant_name or other_menu.restaurant_name
+        self.restaurant_address = (
+            self.restaurant_address or other_menu.restaurant_address
+        )
         self.menu_items.extend(other_menu.menu_items)
 
 
@@ -193,7 +221,7 @@ class ScraperAgent(AbstractAgent):
         return prompt
 
     def scrape(self, url="https://www.ediningexpress.com/live20/927/1749"):
-        print(f"Scraping menu from {url}...")
+        logger.debug(f"Scraping menu from {url}...")
         # Setup Chrome options to run headless
         chrome_options = webdriver.ChromeOptions()
         chrome_options.add_argument("--headless")
@@ -224,7 +252,7 @@ class ScraperAgent(AbstractAgent):
         # Now you can access the final HTML with JavaScript executed
         html = driver.page_source
 
-        print(f"Menu scraped from {url}...")
+        logger.debug(f"Menu scraped from {url}...: \n\n {html}")
 
         print(html)
 
@@ -232,17 +260,18 @@ class ScraperAgent(AbstractAgent):
 
         return html
 
-    def process_scraped_menu(self, text, chunk_size=4000) -> dict:
-        print(f"Creating JSON menu from API...")
-
+    def process_scraped_menu(self, text, chunk_size=2000, max=32000) -> dict:
         initial_menu = ScraperMenu()
-
-        while text:
+        total = max or len(text)
+        i = 0
+        while text and i <= total:
             current_chunk = text[:chunk_size]
             text = text[chunk_size:]
+            i += chunk_size
 
             logger.debug(
-                f"Processing raw menu chunk of len {len(current_chunk)}: \n\n {current_chunk}"
+                f"\n Processing raw menu chunk of len {len(current_chunk)} of "
+                f"total {total}: \n\n {current_chunk}"
             )
 
             prompt = self.get_scraping_prompt(current_chunk)
@@ -269,12 +298,28 @@ def trim_to_tokens(s, num_tokens=32000):
 
 
 def main():
+    parser = argparse.ArgumentParser(description="Scrape a menu from the web")
+    parser.add_argument(
+        "--chunks",
+        type=int,
+        default=2000,
+        help="Chunk size for scraping the menu",
+    )
+    parser.add_argument(
+        "--max_len",
+        type=int,
+        default=32000,
+        help="Max length of the menu to scrape",
+    )
+    args = parser.parse_args()
+
+
     ms = ScraperAgent()
     # Create a menu from the text
     menu_html = ms.scrape()
 
     # context to large, need function calls and context chunks
-    menu = ms.process_scraped_menu(menu_html)
+    menu = ms.process_scraped_menu(menu_html, chunk_size=args.chunks, max=args.max_len)
 
     # Print the menu
     json.dumps(menu, indent=4)
