@@ -42,25 +42,23 @@ class AbstractOrderData:
 @dataclass
 class AbstractAgent:
     api_model: str = field(init=False, default=ApiModels.GPT4.value)
-    messages: List[Dict] = field(init=False, default_factory=list)
+    message_history: List[Dict] = field(init=False, default_factory=list)
 
     @Halo(spinner="dots", color="green", text="Thinking...")
     def get_function_completion_response(
-        self, prompt: str, fn_name: str = None, with_message_history=True
+        self, prompt: str, fn_name: str = None, with_message_history=False
     ):
-        default_messages = [
+        messages = [
             self.get_system_message(),
+            *(self.message_history if with_message_history else []),
             {"role": "user", "content": prompt},
         ]
         if with_message_history:
-            default_messages.extend(self.messages)
+            messages.extend(self.message_history)
 
         completion = openai.ChatCompletion.create(
             model=self.api_model,
-            messages=[
-                self.get_system_message(),
-                {"role": "user", "content": prompt},
-            ],
+            messages=messages,
             functions=[self.functions[fn_name]] if fn_name else None,
             function_call={"name": fn_name},
         )
@@ -78,10 +76,10 @@ class AbstractAgent:
         raise NotImplementedError
 
     def add_user_message(self, msg):
-        self.messages.append({"role": "user", "content": msg})
+        self.message_history.append({"role": "user", "content": msg})
 
     def add_agent_message(self, msg):
-        self.messages.append({"role": "assistant", "content": msg})
+        self.message_history.append({"role": "assistant", "content": msg})
 
     def communicate(
         self,
