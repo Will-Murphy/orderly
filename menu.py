@@ -1,5 +1,6 @@
 import argparse
 from dataclasses import dataclass, field, asdict
+import traceback
 from typing import List
 from abstract_models import AbstractAgent, AbstractOrderData
 from completion_api import ApiModels
@@ -155,9 +156,7 @@ class ScraperMenu(AbstractOrderData):
                     "type": "array",
                     "description": (
                         "Array of menu items extracted from html with all fields filled out according the schema."
-                        "Items should ONLY be added to this list if they can meet the menu items detail."
-                        "That is they should have either a price or at least one priced detail or not be "
-                        "added at all. In short, only add items to this list if they can be ordered."
+                        "Items should ONLY be in this list if they can be ordered."
                     ),
                     "items": ScraperItem.get_schema("item name"),
                 },
@@ -220,6 +219,15 @@ class ScraperAgent(AbstractAgent):
         prompt = f"Here is the html from the web page with the menu items. \n {  web_page_html}"
         return prompt
 
+    def get_retry_prompt(self, web_page_html: str, error: str):
+        prompt = (
+            f"This chunk of the restaurants html menu web page failed "
+            f"to process: \n {  web_page_html}\n "
+            f"due to error: \n {error} \n"
+            f"please try again."
+        )
+        return prompt
+
     def scrape(self, url="https://www.ediningexpress.com/live20/927/1749"):
         logger.debug(f"Scraping menu from {url}...")
         # Setup Chrome options to run headless
@@ -260,7 +268,7 @@ class ScraperAgent(AbstractAgent):
 
         return html
 
-    def process_scraped_menu(self, text, chunk_size=2000, max=32000) -> dict:
+    def process_scraped_menu(self, text, chunk_size=2000, max=32000) -> ScraperMenu:
         initial_menu = ScraperMenu()
         total = max or len(text)
         i = 0
@@ -270,21 +278,37 @@ class ScraperAgent(AbstractAgent):
             i += chunk_size
 
             logger.debug(
-                f"\n Processing raw menu chunk of len {len(current_chunk)} of "
+                f"\n Processing raw menu chunk of len {len(current_chunk)}. {i} of "
                 f"total {total}: \n\n {current_chunk}"
             )
 
             prompt = self.get_scraping_prompt(current_chunk)
 
-            response = self.get_function_completion_response(
-                prompt, "process_scraped_menu"
-            )
+            max_tries = 3
+            tries = 0
+            error = None
+            while tries < max_tries:
+                if error is None:
+                    response = self.get_function_completion_response(
+                        prompt, "process_scraped_menu"
+                    )
+                    logger.debug(f"Got response from API: \n\n {response}")
+                else:
+                    logger.debug(f"Retrying with error: \n\n {error}")
+                    retry_prompt = self.get_retry_prompt(current_chunk, error)
+                    response = self.get_function_completion_response(
+                        retry_prompt, "process_scraped_menu"
+                    )
 
-            logger.debug(f"Got response from API: \n\n {response}")
+                try:
+                    menu_chunk = ScraperMenu.from_api_response(response)
+                    logger.debug(f"Turned into menu chunk: \n\n {menu_chunk}")
+                    break
+                except Exception:
+                    error = traceback.format_exc()
+                    logger.error(f"Scraping failed with error: \n\n {error}")
 
-            menu_chunk = ScraperMenu.from_api_response(response)
-
-            logger.debug(f"Turned into menu chunk: \n\n {menu_chunk}")
+                tries += 1
 
             initial_menu.extend_menu(menu_chunk)
 
@@ -295,6 +319,17 @@ class ScraperAgent(AbstractAgent):
 
 def trim_to_tokens(s, num_tokens=32000):
     return s[:num_tokens]
+
+
+def write_menu(dictionary, filename: str):
+    filename = filename.lower().replace(" ", "_") + ".json"
+    try:
+        with open(filename, "w") as file:
+            json.dump(dictionary, file)
+        print("Successfully wrote to", filename)
+    except Exception as e:
+        print("Error occurred:", e)
+        print(traceback.format_exc())
 
 
 def main():
@@ -311,18 +346,31 @@ def main():
         default=32000,
         help="Max length of the menu to scrape",
     )
+    parser.add_argument(
+        "--menu_name",
+        type=str,
+        default=None,
+        help="Name of menu to scrape",
+    )
+    parser.add_argument(
+        "--url",
+        type=str,
+        default="https://www.ediningexpress.com/live20/927/1749",
+        help="URL of menu to scrape",
+    )
     args = parser.parse_args()
 
-
     ms = ScraperAgent()
+    
     # Create a menu from the text
-    menu_html = ms.scrape()
-
-    # context to large, need function calls and context chunks
+    menu_html = ms.scrape(args.url)
     menu = ms.process_scraped_menu(menu_html, chunk_size=args.chunks, max=args.max_len)
 
-    # Print the menu
-    json.dumps(menu, indent=4)
+    # Save / print the menu
+    json.dumps(menu.as_dict(), indent=4)
+    write_menu(
+        menu.as_dict(), args.menu_name if args.menu_name else menu.restaurant_name
+    )
 
 
 if __name__ == "__main__":

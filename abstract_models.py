@@ -46,7 +46,7 @@ class AbstractAgent:
 
     @Halo(spinner="dots", color="green", text="Thinking...")
     def get_function_completion_response(
-        self, prompt: str, fn_name: str = None, with_message_history=False
+        self, prompt: str, fn_name: str = None, with_message_history=False, **api_kwargs
     ):
         messages = [
             self.get_system_message(),
@@ -61,6 +61,7 @@ class AbstractAgent:
             messages=messages,
             functions=[self.functions[fn_name]] if fn_name else None,
             function_call={"name": fn_name},
+            **api_kwargs,
         )
         return completion
 
