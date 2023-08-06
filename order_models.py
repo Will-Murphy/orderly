@@ -199,6 +199,44 @@ class Order(AbstractOrderData):
             else f"\n\n{'='*80}\n" + hpo + f"{'='*80}\n\n"
         )
 
+    @classmethod
+    def get_schema(
+        cls,
+        menu_items_desc="A structured mapping to the exact menu items the user has asked for.",
+        unrec_items_desc="A structured mapping of items not directly mentioned in the menu AFTER clarification.",
+        single_unrec_name_desc="key user mentioned that was not found in the menu.",
+        completed_desc="Whether or not the order has been sufficiently clarified and is ready to be finalized.",
+        human_res_desc="A CREATIVE, WITTY GREETING TO THE CUSTOMER",
+    ) -> dict:
+        return {
+            "type": "object",
+            "properties": {
+                f"{Order.MENU_ITEMS}": {
+                    "type": "array",
+                    "description": menu_items_desc,
+                    "items": {**Item.get_schema()},
+                },
+                f"{Order.UNRECOGNIZED_ITEMS}": {
+                    "type": "array",
+                    "description": unrec_items_desc,
+                    "items": {**Item.get_schema(name_desc=single_unrec_name_desc)},
+                },
+                f"{Order.COMPLETED}": {
+                    "type": "boolean",
+                    "description": completed_desc,
+                },
+                f"{Order.HUMAN_RESPONSE}": {
+                    "type": "string",
+                    "description": human_res_desc,
+                },
+            },
+            "required": [
+                f"{Order.MENU_ITEMS}",
+                f"{Order.HUMAN_RESPONSE}",
+                f"{Order.COMPLETED}",
+            ],
+        }
+
 
 ORDER_FUNCTIONS = {
     "process_user_order": {
@@ -209,38 +247,7 @@ ORDER_FUNCTIONS = {
             f"unrecognized items must be provided as separate lists. If the order is not "
             f"yet complete, the user will be prompted to clarify their order."
         ),
-        "parameters": {
-            "type": "object",
-            "properties": {
-                f"{Order.MENU_ITEMS}": {
-                    "type": "array",
-                    "description": "A structured mapping to the exact menu items the user has asked for.",
-                    "items": {**Item.get_schema()},
-                },
-                f"{Order.UNRECOGNIZED_ITEMS}": {
-                    "type": "array",
-                    "description": "A structured mapping of items not directly mentioned in the menu AFTER clarification.",
-                    "items": {
-                        **Item.get_schema(
-                            name_desc="key user mentioned that was not found in the menu."
-                        )
-                    },
-                },
-                f"{Order.COMPLETED}": {
-                    "type": "boolean",
-                    "description": "Whether or not the order has been sufficiently clarified and is ready to be finalized.",
-                },
-                f"{Order.HUMAN_RESPONSE}": {
-                    "type": "string",
-                    "description": "A CREATIVE, WITTY GREETING TO THE CUSTOMER",
-                },
-            },
-            "required": [
-                f"{Order.MENU_ITEMS}",
-                f"{Order.HUMAN_RESPONSE}",
-                f"{Order.COMPLETED}",
-            ],
-        },
+        "parameters": {**Order.get_schema()},
     },
     "clarify_user_order": {
         "name": "clarify_user_order",
@@ -251,39 +258,16 @@ ORDER_FUNCTIONS = {
             f"recent clarification should be added the list of unrecognized items, not those being clarified."
         ),
         "parameters": {
-            "type": "object",
-            "properties": {
-                f"{Order.MENU_ITEMS}": {
-                    "type": "array",
-                    "description": "A structured mapping to the corrected menu items the user has asked for.",
-                    "items": {**Item.get_schema()},
-                },
-                f"{Order.UNRECOGNIZED_ITEMS}": {
-                    "type": "array",
-                    "description": (
-                        f"A structure of items from the users current input that were not clarified. If the users "
-                        f"current input is clear then this should be empty."
-                    ),
-                    "items": {
-                        **Item.get_schema(
-                            name_desc="key user mentioned that was not found in the menu."
-                        )
-                    },
-                },
-                f"{Order.COMPLETED}": {
-                    "type": "boolean",
-                    "description": "Whether or not the order has been sufficiently clarified and is ready to be processed.",
-                },
-                f"{Order.HUMAN_RESPONSE}": {
-                    "type": "string",
-                    "description": "A CREATIVE, WITTY RESPONSE TO THE CLARIFIED ORDER",
-                },
-            },
-            "required": [
-                f"{Order.MENU_ITEMS}",
-                f"{Order.HUMAN_RESPONSE}",
-                f"{Order.COMPLETED}",
-            ],
+            **Order.get_schema(
+                menu_items_desc="A structured mapping to the exact menu items the user has asked for.",
+                unrec_items_desc=(
+                    f"A structure of items from the users current input that were not clarified. If the users "
+                    f"current input is clear then this should be empty."
+                ),
+                single_unrec_name_desc="key user mentioned that was not found in the menu.",
+                completed_desc="Whether or not the order has been sufficiently clarified and is ready to be processed.",
+                human_res_desc="A CREATIVE, WITTY GREETING TO THE CUSTOMER",
+            )
         },
     },
 }
