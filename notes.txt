@@ -24,7 +24,10 @@
     )
 
 
-#TODO Aug 1
+#TODO
 - Implement order finalization
+- Implement order updating
 - Implement Scraping with function calls 
 - Add Priced Order Details to Order Models
+- Start with chineese food restaurant
+- Add prompts as system messages 

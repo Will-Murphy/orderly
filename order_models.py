@@ -113,7 +113,8 @@ class Order(AbstractOrderData):
     MENU_ITEMS = "menu_items"
     UNRECOGNIZED_ITEMS = "unrecognized_items"
     MENU_ITEM_DETAILS = "menu_item_details"
-    COMPLETED = "completed"
+    IS_COMPLETED = "is_completed"
+    IS_FINALIZED = "is_finalized"
 
     menu: Menu
     human_response: str
@@ -124,7 +125,8 @@ class Order(AbstractOrderData):
         default_factory=lambda: defaultdict(lambda: (0, 0))
     )
     total_price: float = 0.0
-    completed: str = False
+    is_completed: str = False
+    is_finalized: str = False
 
     def as_dict(self):
         return {
@@ -135,7 +137,7 @@ class Order(AbstractOrderData):
             "total_price": self.total_price,
             "unrecognized_items": [asdict(m) for m in self.unrecognized_items],
             "total_price": self.total_price,
-            "completed": self.completed,
+            "is_completed": self.is_completed,
         }
 
     def __post_init__(self):
@@ -172,10 +174,13 @@ class Order(AbstractOrderData):
         self.human_response = c_order.human_response
 
         self.total_price += c_order.total_price
-        self.completed = c_order.completed
+        self.is_completed = c_order.is_completed
 
     def is_complete(self) -> bool:
-        return self.completed
+        return self.is_completed
+
+    def is_final(self) -> bool:
+        return self.is_finalized
 
     @classmethod
     def from_api_response(cls, response, menu: Menu) -> "Order":
@@ -205,7 +210,8 @@ class Order(AbstractOrderData):
         menu_items_desc="A structured mapping to the exact menu items the user has asked for.",
         unrec_items_desc="A structured mapping of items not directly mentioned in the menu AFTER clarification.",
         single_unrec_name_desc="key user mentioned that was not found in the menu.",
-        completed_desc="Whether or not the order has been sufficiently clarified and is ready to be finalized.",
+        is_completed_desc="Whether or not the order has been sufficiently clarified",
+        is_finalized_desc="Whether or not the order has been confirmed by the user.",
         human_res_desc="A CREATIVE, WITTY GREETING TO THE CUSTOMER",
     ) -> dict:
         return {
@@ -221,9 +227,13 @@ class Order(AbstractOrderData):
                     "description": unrec_items_desc,
                     "items": {**Item.get_schema(name_desc=single_unrec_name_desc)},
                 },
-                f"{Order.COMPLETED}": {
+                f"{Order.IS_FINALIZED}": {
                     "type": "boolean",
-                    "description": completed_desc,
+                    "description": is_finalized_desc,
+                },
+                f"{Order.IS_COMPLETED}": {
+                    "type": "boolean",
+                    "description": is_completed_desc,
                 },
                 f"{Order.HUMAN_RESPONSE}": {
                     "type": "string",
@@ -233,7 +243,8 @@ class Order(AbstractOrderData):
             "required": [
                 f"{Order.MENU_ITEMS}",
                 f"{Order.HUMAN_RESPONSE}",
-                f"{Order.COMPLETED}",
+                f"{Order.IS_COMPLETED}",
+                f"{Order.IS_FINALIZED}",
             ],
         }
 
@@ -245,7 +256,8 @@ ORDER_FUNCTIONS = {
             f"Processes a users order for a given menu in order to return both a "
             f"human readable response and a itemized transaction summary. Recognized and "
             f"unrecognized items must be provided as separate lists. If the order is not "
-            f"yet complete, the user will be prompted to clarify their order."
+            f"yet complete due to ambiguity, the user will be prompted to clarify their order."
+            f"If the order is complete, the user will be prompted to confirm their order."
         ),
         "parameters": {**Order.get_schema()},
     },
@@ -256,6 +268,7 @@ ORDER_FUNCTIONS = {
             f"human readable response, an itemized transaction summary, and whether the order is complete."
             f"Clarified and unrecognized items must be provided as separate lists, only items from the users "
             f"recent clarification should be added the list of unrecognized items, not those being clarified."
+            f"Once an order has been sufficiently clarified, the user will be prompted to confirm their order."
         ),
         "parameters": {
             **Order.get_schema(
@@ -265,8 +278,28 @@ ORDER_FUNCTIONS = {
                     f"current input is clear then this should be empty."
                 ),
                 single_unrec_name_desc="key user mentioned that was not found in the menu.",
-                completed_desc="Whether or not the order has been sufficiently clarified and is ready to be processed.",
+                is_completed_desc="Whether or not the order has been sufficiently clarified and is ready to be processed.",
                 human_res_desc="A CREATIVE, WITTY GREETING TO THE CUSTOMER",
+            )
+        },
+    },
+    "finalize_user_order": {
+        "name": "finalize_user_order",
+        "description": (
+            f"Processes a final user users order for a given menu and in order to complete their transaction."
+            f"Recieves a human readable response, an itemized transaction summary, and whether the order is complete, "
+            f"and whether the user has confirmed that their order is finalized. Note: the human response should match "
+            f"the finalization status of the order."
+        ),
+        "parameters": {
+            **Order.get_schema(
+                menu_items_desc="A structured mapping of all the unique menu items the user has asked fo during their session.",
+                unrec_items_desc=(
+                    f"Any items that have not are not clear during finalization"
+                ),
+                single_unrec_name_desc="key user mentioned that was not found in the menu.",
+                is_completed_desc="Whether or not the order has been unambigously is_finalized and is ready to be processed.",
+                human_res_desc="A CREATIVE, WITTY GREETING TO THE CUSTOMER that matches the is_finalized status of the order.",
             )
         },
     },
@@ -292,7 +325,8 @@ class SalesAgent(AbstractAgent):
             "content": (
                 f"You are a 'smart' server for {self.menu.restaurant_name} "
                 f"interacting with a customer and mapping their order directly"
-                f"to the following menu items while being friendly and helpful:\n\n"
+                f"to the following menu items in an attempt to finalize their order"
+                f"while being friendly and helpful:\n\n"
                 f"{self.menu.full_detail}\n\n"
             ),
         }
@@ -302,9 +336,14 @@ class SalesAgent(AbstractAgent):
 
         return prompt
 
+    def get_finalization_prompt(self, user_input: str) -> str:
+        prompt = f"We think the user has finalized their order as a final response they have said: \n '{user_input}'. \n"
+
+        return prompt
+
     def get_clarification_prompt(self, user_input: str, order: Order) -> str:
         prompt = (
-            f"Some user order items were not understood correctly "
+            f"Some items were not understood correctly of the users order was ambiguous."
             f"The items that were not previously recognized from the above menu are: "
             f"\n {human_item_list(order.unrecognized_items)}. \n"
             f"The user has now told use that instead they mean the following: "
@@ -320,9 +359,13 @@ class SalesAgent(AbstractAgent):
         )
         order = self._initialize_order(initial_input)
 
-        if not order.is_complete():
-            order = self._clarify_order(order)
-
+        while not (order.is_complete() and order.is_final()):
+            if not order.is_complete():
+                order = self._clarify_order(order)
+                
+            if order.is_complete and not order.is_final():
+                order = self._finalize_order(order)
+                                
         self.communicate(
             order.human_response,
             display_summary=order.get_human_order_summary(),
@@ -338,7 +381,8 @@ class SalesAgent(AbstractAgent):
         self.waiting_for_api_response()
 
         response = self.get_function_completion_response(
-            initial_prompt, "process_user_order"
+            initial_prompt, "process_user_order", with_message_history=True
+
         )
         logger.debug(f"API response: \n{response}\n")
 
@@ -348,39 +392,58 @@ class SalesAgent(AbstractAgent):
         return order
 
     def _clarify_order(self, order: Order) -> Order:
-        while not order.is_complete():
-            if not order.menu_items:
-                retry_input = self.communicate(
-                    order.human_response,
-                    get_response=True,
-                )
-                order = self._initialize_order(retry_input)
-            else:
-                user_clar_input = self.communicate(
-                    order.human_response,
-                    get_response=True,
-                    display_summary=order.get_human_order_summary(),
-                )
-                clarficiation_prompt = self.get_clarification_prompt(
-                    user_clar_input, order
-                )
+        if not order.menu_items:
+            retry_input = self.communicate(
+                order.human_response,
+                get_response=True,
+            )
+            order = self._initialize_order(retry_input)
+        else:
+            user_clar_input = self.communicate(
+                order.human_response,
+                get_response=True,
+                display_summary=order.get_human_order_summary(),
+            )
+            clarficiation_prompt = self.get_clarification_prompt(user_clar_input, order)
 
-                self.waiting_for_api_response()
+            self.waiting_for_api_response()
 
-                logger.debug(f"\n Clarified prompt: \n {clarficiation_prompt}\n")
-                response = self.get_function_completion_response(
-                    clarficiation_prompt,
-                    "clarify_user_order",
-                    with_message_history=True,
-                )
-                logger.debug(f"API response: \n{response}\n")
+            logger.debug(f"\n Clarified prompt: \n {clarficiation_prompt}\n")
+            response = self.get_function_completion_response(
+                clarficiation_prompt,
+                "clarify_user_order",
+                with_message_history=True
+            )
+            logger.debug(f"API response: \n{response}\n")
 
-                logger.debug(f"Raw Clarfied Order: \n {response} \n")
-                clarification_order = Order.from_api_response(response, self.menu)
-                logger.debug(f"Clarified Order: \n {clarification_order} \n")
+            logger.debug(f"Raw Clarfied Order: \n {response} \n")
+            clarification_order = Order.from_api_response(response, self.menu)
+            logger.debug(f"Clarified Order: \n {clarification_order} \n")
 
-                order.add_clarified_order(clarification_order)
-                logger.debug(f"Input Clarfied Order: \n {order} \n")
+            logger.debug(f"Input Clarfied Order: \n {order} \n")
+
+        return order
+
+    def _finalize_order(self, order: Order) -> Order:
+        final_response = self.communicate(
+            order.human_response,
+            display_summary=order.get_human_order_summary(),
+            speech_summary=order.get_human_order_summary(speech_only=True),
+            get_response=True,
+        )
+
+        finalization_prompt = self.get_finalization_prompt(final_response)
+
+        self.waiting_for_api_response()
+
+        response = self.get_function_completion_response(
+            finalization_prompt, "finalize_user_order", with_message_history=True
+
+        )
+        logger.debug(f"Finalization API response: \n{response}\n")
+
+        order = Order.from_api_response(response, self.menu)
+        logger.debug(f"IS_Finalized Order from response: \n {order} \n")
 
         return order
 
