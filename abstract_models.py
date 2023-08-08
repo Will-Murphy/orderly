@@ -40,9 +40,22 @@ class AbstractOrderData:
 
 
 @dataclass
+class UsageData:
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
+    total_tokens: int = 0
+    
+    def add_usage(self, response):
+        self.prompt_tokens += response.usage.prompt_tokens
+        self.completion_tokens += response.usage.completion_tokens
+        self.total_tokens += response.usage.total_tokens
+
+
+@dataclass
 class AbstractAgent:
     api_model: str = field(init=False, default=ApiModels.GPT4.value)
     message_history: List[Dict] = field(init=False, default_factory=list)
+    usage_data: UsageData = field(init=False, default_factory=UsageData)
 
     @Halo(spinner="dots", color="green", text="Thinking...")
     def get_function_completion_response(
@@ -63,6 +76,9 @@ class AbstractAgent:
             function_call={"name": fn_name},
             **api_kwargs,
         )
+        
+        self.usage_data.add_usage(completion)
+    
         return completion
 
     @property

@@ -16,10 +16,8 @@ from tests.mock_reponse import get_mock_response
 from utils import get_innermost_items
 
 
-openai.api_key = os.getenv("OPENAI_API_KEY")
 
 TEST_MENU_DIR = "tests/test_menus"
-
 
 logger = Logger("order_logger")
 
@@ -371,6 +369,9 @@ class SalesAgent(AbstractAgent):
             display_summary=order.get_human_order_summary(),
             speech_summary=order.get_human_order_summary(speech_only=True),
         )
+        logger.debug(f"Customers Final Order: \n {order} \n")
+        logger.debug(f"Total API Usage Data \n {self.usage_data} \n")
+
 
         return order
 
@@ -417,12 +418,12 @@ class SalesAgent(AbstractAgent):
             logger.debug(f"API response: \n{response}\n")
 
             logger.debug(f"Raw Clarfied Order: \n {response} \n")
-            clarification_order = Order.from_api_response(response, self.menu)
-            logger.debug(f"Clarified Order: \n {clarification_order} \n")
+            clarified_order = Order.from_api_response(response, self.menu)
+            logger.debug(f"Clarified Order: \n {clarified_order} \n")
 
             logger.debug(f"Input Clarfied Order: \n {order} \n")
 
-        return order
+        return clarified_order
 
     def _finalize_order(self, order: Order) -> Order:
         final_response = self.communicate(
@@ -442,10 +443,10 @@ class SalesAgent(AbstractAgent):
         )
         logger.debug(f"Finalization API response: \n{response}\n")
 
-        order = Order.from_api_response(response, self.menu)
-        logger.debug(f"IS_Finalized Order from response: \n {order} \n")
+        finalized_order = Order.from_api_response(response, self.menu)
+        logger.debug(f"Finalized Order from response: \n {finalized_order} \n")
 
-        return order
+        return finalized_order
 
     def get_display_summary(self, order: Order):
         return f"{'='*80}\n" + f"{order.get_human_order_summary()} \n" + f"{'='*80}\n"
