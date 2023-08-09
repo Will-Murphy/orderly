@@ -47,8 +47,7 @@ def main():
 
     sales_agent = SalesAgent(menu, speak=args.speak)
 
-    order = sales_agent.process_order(mock=args.mock)
-    logger.debug(f"Processed Order: {order}")
+    sales_agent.process_order()
 
 
 if __name__ == "__main__":

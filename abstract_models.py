@@ -4,7 +4,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field, asdict
 import json
 import random
-from typing import DefaultDict, Dict, List, Tuple
+from typing import Dict, List, Tuple
 from completion_api import ApiModels
 from logger import Logger
 from halo import Halo
@@ -24,7 +24,7 @@ class AbstractOrderData:
         return self.__repr__()
 
     def as_dict(self):
-        raise NotImplementedError
+        return asdict(self)
 
     @classmethod
     def get_schema(cls):
@@ -40,9 +40,22 @@ class AbstractOrderData:
 
 
 @dataclass
+class UsageData:
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
+    total_tokens: int = 0
+    
+    def add_usage(self, response):
+        self.prompt_tokens += response.usage.prompt_tokens
+        self.completion_tokens += response.usage.completion_tokens
+        self.total_tokens += response.usage.total_tokens
+
+
+@dataclass
 class AbstractAgent:
     api_model: str = field(init=False, default=ApiModels.GPT4.value)
     message_history: List[Dict] = field(init=False, default_factory=list)
+    usage_data: UsageData = field(init=False, default_factory=UsageData)
 
     @Halo(spinner="dots", color="green", text="Thinking...")
     def get_function_completion_response(
@@ -53,8 +66,8 @@ class AbstractAgent:
             *(self.message_history if with_message_history else []),
             {"role": "user", "content": prompt},
         ]
-        if with_message_history:
-            messages.extend(self.message_history)
+
+        self.logger.debug(f"For response messages: {json.dumps(messages,indent=4)}")
 
         completion = openai.ChatCompletion.create(
             model=self.api_model,
@@ -63,6 +76,9 @@ class AbstractAgent:
             function_call={"name": fn_name},
             **api_kwargs,
         )
+        
+        self.usage_data.add_usage(completion)
+    
         return completion
 
     @property
@@ -84,10 +100,11 @@ class AbstractAgent:
 
     def communicate(
         self,
-        msg: str,
+        msg: str = "",
         get_response=False,
         display_summary: str = "",
         speech_summary: str = "",
+        add_to_message_history=True,
     ) -> str | None:
         with halo_context(spinner="dots", color="red") as spinner:
 
@@ -111,15 +128,21 @@ class AbstractAgent:
 
                 return response
 
-            print(msg + display_summary + "\n\n")
-            speak(msg + speech_summary)
+            if msg:
+                print(msg + display_summary + "\n\n")
+                speak(msg + speech_summary)
 
-            self.add_agent_message(msg)
+            if msg and add_to_message_history:
+                self.add_agent_message(msg)
             if get_response:
                 user_response = listen_for()
                 self.logger.info(f"user response: {user_response}")
-                self.add_user_message(user_response)
+                if add_to_message_history:
+                    self.add_user_message(user_response)
                 return user_response
 
     def waiting_for_api_response(self):
-        self.communicate(f"\n {random.choice(get_generic_order_waiting_phrases())} \n")
+        self.communicate(
+            f"\n {random.choice(get_generic_order_waiting_phrases())} \n",
+            add_to_message_history=False,
+        )

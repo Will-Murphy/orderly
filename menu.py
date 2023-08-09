@@ -202,6 +202,10 @@ class ScraperAgent(AbstractAgent):
     @property
     def functions(self):
         return SCRAPING_FUNCTIONS
+    
+    @property
+    def logger(self):
+        return logger
 
     def get_system_message(self):
         return {
@@ -284,7 +288,7 @@ class ScraperAgent(AbstractAgent):
 
             prompt = self.get_scraping_prompt(current_chunk)
 
-            max_tries = 3
+            max_tries = 3 
             tries = 0
             error = None
             while tries < max_tries:
