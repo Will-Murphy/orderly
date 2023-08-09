@@ -47,7 +47,7 @@ def main():
 
     sales_agent = SalesAgent(menu, speak=args.speak)
 
-    sales_agent.process_order(mock=args.mock)
+    sales_agent.process_order()
 
 
 if __name__ == "__main__":

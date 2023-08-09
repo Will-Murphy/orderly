@@ -24,7 +24,7 @@ class AbstractOrderData:
         return self.__repr__()
 
     def as_dict(self):
-        raise NotImplementedError
+        return asdict(self)
 
     @classmethod
     def get_schema(cls):

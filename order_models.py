@@ -165,15 +165,6 @@ class Order(AbstractOrderData):
 
                 self.total_price += subtotal
 
-    def add_clarified_order(self, c_order: "Order"):
-        self.processed_order = {**self.processed_order, **c_order.processed_order}
-
-        self.unrecognized_items = list(c_order.unrecognized_items)
-        self.human_response = c_order.human_response
-
-        self.total_price += c_order.total_price
-        self.is_completed = c_order.is_completed
-
     def is_complete(self) -> bool:
         return self.is_completed
 
@@ -350,7 +341,7 @@ class SalesAgent(AbstractAgent):
 
         return prompt
 
-    def process_order(self, mock=False) -> Order:
+    def process_order(self) -> Order:
         initial_input = self.communicate(
             f"Hi, welcome to {self.menu.restaurant_name}. What can I get for you today? \n",
             get_response=True,
@@ -361,7 +352,7 @@ class SalesAgent(AbstractAgent):
             if not order.is_complete():
                 order = self._clarify_order(order)
                 
-            if order.is_complete and not order.is_final():
+            if order.is_complete() and not order.is_final():
                 order = self._finalize_order(order)
                                 
         self.communicate(
