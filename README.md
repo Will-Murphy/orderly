@@ -1,7 +1,7 @@
 # Orderly 
 
 AI enabled, speech-based PoS system desinged to automate entire customer ordering workflow and menu ingestion. 
-Accomplished using the GPT-4 API, in particular function calls, as well as text to speech capabilities 
+Accomplished using the GPT-4 API, in particular function calls, as well as speech recognition and text-to-speech capabilities 
 in order to understand orders, inquiries, and entire restaurant menus and interact with customers in an intelligent
 , human-like way.
 
