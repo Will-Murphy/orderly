@@ -48,4 +48,4 @@ Heres a simple example interaction. The tool should recognize a valid order and 
 user until their order is complete and valid, showing the order items, sub-total and total cost at each 
 step along the way
 
-<img width="1280" alt="image" src="https://github.com/Will-Murphy/orderly/assets/43630470/8b079316-a39c-4a99-b351-9236b2f1793c">
+<img width="1279" alt="image" src="https://github.com/Will-Murphy/orderly/assets/43630470/241f1404-6cdb-4cc1-beb1-510b94a77093">
