@@ -13,7 +13,7 @@ step along the way. Here we use the cli to interact, but its best used with spee
 
 <img width="1279" alt="image" src="https://github.com/Will-Murphy/orderly/assets/43630470/241f1404-6cdb-4cc1-beb1-510b94a77093">
 
-# Requirements
+## Requirements
 - Python 3.10
 - Pip
 - Pipenv
