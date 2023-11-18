@@ -53,7 +53,7 @@ class UsageData:
 
 @dataclass
 class AbstractAgent:
-    api_model: str = field(init=False, default=ApiModels.GPT4.value)
+    api_model: str = field(init=False, default=ApiModels.GPT4_T.value)
     message_history: List[Dict] = field(init=False, default_factory=list)
     usage_data: UsageData = field(init=False, default_factory=UsageData)
 
