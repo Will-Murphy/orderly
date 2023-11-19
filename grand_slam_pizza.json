@@ -1,0 +1,518 @@
+{
+  "menu_items": [
+    {
+      "name": "Grand Slam Pizza",
+      "item_price": "$14.99",
+      "category": "Main Menu",
+      "details": []
+    },
+    {
+      "name": "Grand Slam Pizza",
+      "item_price": "$10.99",
+      "category": "Pizza",
+      "details": []
+    },
+    {
+      "name": "Roast Beef",
+      "item_price": "$8.49",
+      "category": "Sandwiches",
+      "details": []
+    },
+    { "name": "Pizza", "item_price": null, "category": "Food", "details": [] },
+    {
+      "name": "Gourmet Pizza",
+      "item_price": null,
+      "category": "Food",
+      "details": []
+    },
+    {
+      "name": "White Pizza",
+      "item_price": null,
+      "category": "Food",
+      "details": []
+    },
+    {
+      "name": "Calzones",
+      "item_price": null,
+      "category": "Food",
+      "details": []
+    },
+    {
+      "name": "Quesadillas 12\"",
+      "item_price": null,
+      "category": "Food",
+      "details": []
+    },
+    { "name": "Pasta", "item_price": null, "category": "Food", "details": [] },
+    {
+      "name": "Side Orders",
+      "item_price": null,
+      "category": "Food",
+      "details": []
+    },
+    { "name": "Salads", "item_price": null, "category": "Food", "details": [] },
+    { "name": "Wraps", "item_price": null, "category": "Food", "details": [] },
+    {
+      "name": "Hot Subs",
+      "item_price": null,
+      "category": "Food",
+      "details": []
+    },
+    {
+      "name": "Cold Subs",
+      "item_price": null,
+      "category": "Food",
+      "details": []
+    },
+    {
+      "name": "Steak Subs",
+      "item_price": null,
+      "category": "Food",
+      "details": []
+    },
+    {
+      "name": "Roast Beef",
+      "item_price": null,
+      "category": "Food",
+      "details": []
+    },
+    {
+      "name": "Dinners",
+      "item_price": null,
+      "category": "Food",
+      "details": []
+    },
+    {
+      "name": "Catering Menu",
+      "item_price": null,
+      "category": "Food",
+      "details": []
+    },
+    { "name": "Clubs", "item_price": null, "category": "Food", "details": [] },
+    { "name": "Kids", "item_price": null, "category": "Food", "details": [] },
+    {
+      "name": "Dipping Sauce",
+      "item_price": null,
+      "category": "Food",
+      "details": []
+    },
+    { "name": "Soups", "item_price": null, "category": "Food", "details": [] },
+    {
+      "name": "Desserts",
+      "item_price": null,
+      "category": "Food",
+      "details": []
+    },
+    {
+      "name": "Beverages",
+      "item_price": null,
+      "category": "Drinks",
+      "details": []
+    },
+    {
+      "name": "Cheese",
+      "item_price": {},
+      "category": "",
+      "details": [
+        { "name": "Small Cheese", "detail_price": 8.75 },
+        { "name": "Large Cheese", "detail_price": 13.75 },
+        { "name": "Family Cheese", "detail_price": 26.75 }
+      ]
+    },
+    {
+      "name": "Gluten Free (One Size)",
+      "item_price": { "price": 11.0 },
+      "category": "",
+      "details": []
+    },
+    {
+      "name": "Hawaiian",
+      "item_price": {},
+      "category": "GOURMET PIZZA",
+      "details": [
+        { "name": "Small Hawaiian", "detail_price": 12.25 },
+        { "name": "Large Hawaiian", "detail_price": 17.65 }
+      ]
+    },
+    {
+      "name": "Fam Hawaiian",
+      "item_price": "$36.75",
+      "category": null,
+      "details": []
+    },
+    {
+      "name": "Hawaiian Bbq",
+      "item_price": null,
+      "category": null,
+      "details": [
+        { "name": "Sm Hawaiian BBQ", "detail_price": 13.5 },
+        { "name": "Lg Hawaiian BBQ", "detail_price": 20.5 },
+        { "name": "Fam Hawaiian BBQ", "detail_price": 42.25 }
+      ]
+    },
+    {
+      "name": "Sweet And Spicy",
+      "item_price": null,
+      "category": null,
+      "details": [
+        { "name": "Sm Sweet and Spicy", "detail_price": 13.5 },
+        { "name": "Lg Sweet and Spicy", "detail_price": 20.5 },
+        { "name": "Fam Sweet and Spicy", "detail_price": 42.25 }
+      ]
+    },
+    {
+      "name": "Taco",
+      "item_price": { "Sm": "$13.50", "Lg": "$20.50", "Fam": "$42.25" },
+      "category": null,
+      "details": [
+        { "name": "Taco meat", "detail_price": 0 },
+        { "name": "Tomatoes", "detail_price": 0 },
+        { "name": "Onions", "detail_price": 0 },
+        { "name": "Nachos & Salsa", "detail_price": 0 },
+        { "name": "Sour Cream on the side", "detail_price": 0 }
+      ]
+    },
+    {
+      "name": "Pastrami",
+      "item_price": { "Sm": "$13.50", "Lg": "$20.50", "Fam": "$42.25" },
+      "category": null,
+      "details": [
+        { "name": "Pastrami", "detail_price": 0 },
+        { "name": "Cooked Onions", "detail_price": 0 },
+        { "name": "Honey Mustard Base", "detail_price": 0 }
+      ]
+    },
+    {
+      "name": "Chicken Cordon Blue",
+      "item_price": { "Sm": "$13.50", "Lg": "$20.50", "Fam": "$42.25" },
+      "category": null,
+      "details": [
+        { "name": "Chicken", "detail_price": 0 },
+        { "name": "Ham", "detail_price": 0 },
+        { "name": "Honey Mustard Base", "detail_price": 0 }
+      ]
+    },
+    {
+      "name": "Sm Chicken Cordon Blue",
+      "item_price": 13.5,
+      "category": "Pizza",
+      "details": []
+    },
+    {
+      "name": "Lg Chicken Cordon Blue",
+      "item_price": 20.5,
+      "category": "Pizza",
+      "details": []
+    },
+    {
+      "name": "Fam Chicken Cordon Blue",
+      "item_price": 42.25,
+      "category": "Pizza",
+      "details": []
+    },
+    {
+      "name": "Sm Shrimp Scampi",
+      "item_price": 13.5,
+      "category": "Pizza",
+      "details": []
+    },
+    {
+      "name": "Lg Shrimp Scampi",
+      "item_price": 20.5,
+      "category": "Pizza",
+      "details": []
+    },
+    {
+      "name": "Fam Shrimp Scampi",
+      "item_price": 42.25,
+      "category": "Pizza",
+      "details": []
+    },
+    {
+      "name": "Sm Deluxe Special",
+      "item_price": 13.5,
+      "category": "Pizza",
+      "details": []
+    },
+    {
+      "name": "Deluxe Special",
+      "item_price": [
+        { "Sm - $13.50": 13.5 },
+        { "Lg - $20.50": 20.5 },
+        { "Fam - $42.25": 42.25 }
+      ],
+      "category": "pizza",
+      "details": []
+    },
+    {
+      "name": "Meat Lovers",
+      "item_price": [
+        { "Sm - $13.50": 13.5 },
+        { "Lg - $20.50": 20.5 },
+        { "Fam - $42.25": 42.25 }
+      ],
+      "category": "pizza",
+      "details": [
+        {
+          "name": "Pepperoni, ham, sausage, bacon & hamburger",
+          "detail_price": 0
+        }
+      ]
+    },
+    {
+      "name": "Veggie",
+      "item_price": [
+        { "Sm - $13.50": 13.5 },
+        { "Lg - $20.50": 20.5 },
+        { "Fam - $42.25": 42.25 }
+      ],
+      "category": "pizza",
+      "details": [
+        {
+          "name": "Sliced tomatoes, onions, peppers, mushrooms, black olives & broccoli",
+          "detail_price": 0
+        }
+      ]
+    },
+    {
+      "name": "Greek Special",
+      "item_price": "Varies",
+      "category": "Pizza",
+      "details": [
+        { "name": "Sm Greek Special", "detail_price": 13.5 },
+        { "name": "Lg Greek Special", "detail_price": 20.5 },
+        { "name": "Fam Greek Special", "detail_price": 42.25 }
+      ]
+    },
+    {
+      "name": "Melanzana",
+      "item_price": "Varies",
+      "category": "Pizza",
+      "details": [
+        { "name": "Sm Melanzana", "detail_price": 13.5 },
+        { "name": "Lg Melanzana", "detail_price": 20.5 },
+        { "name": "Fam Melanzana", "detail_price": 42.25 }
+      ]
+    },
+    {
+      "name": "Buffalo Chicken",
+      "item_price": "Not Listed",
+      "category": "Pizza",
+      "details": []
+    },
+    {
+      "name": "Sm Buffalo Chicken",
+      "item_price": "$12.50",
+      "category": "",
+      "details": []
+    },
+    {
+      "name": "Lg Buffalo Chicken",
+      "item_price": "$19.50",
+      "category": "",
+      "details": []
+    },
+    {
+      "name": "Fam Buffalo Chicken",
+      "item_price": "$40.00",
+      "category": "",
+      "details": []
+    },
+    {
+      "name": "Sm Bbq Chicken",
+      "item_price": "$12.50",
+      "category": "",
+      "details": []
+    },
+    {
+      "name": "Lg Bbq Chicken",
+      "item_price": "$19.50",
+      "category": "",
+      "details": []
+    },
+    {
+      "name": "Fam Bbq Chicken",
+      "item_price": "$40.00",
+      "category": "",
+      "details": []
+    },
+    {
+      "name": "Sm Chicken Bacon Ranch",
+      "item_price": "$13.50",
+      "category": "",
+      "details": []
+    },
+    {
+      "name": "Lg Chicken Bacon Ranch",
+      "item_price": "$20.50",
+      "category": "Pizza",
+      "details": []
+    },
+    {
+      "name": "Fam Chicken Bacon Ranch",
+      "item_price": "$42.25",
+      "category": "Pizza",
+      "details": []
+    },
+    {
+      "name": "Sm Chicken Broccoli Alfredo",
+      "item_price": "$13.50",
+      "category": "Pizza",
+      "details": []
+    },
+    {
+      "name": "Lg Chicken Broccoli Alfredo",
+      "item_price": "$20.50",
+      "category": "Pizza",
+      "details": []
+    },
+    {
+      "name": "Fam Chicken Broccoli Alfredo",
+      "item_price": "$42.25",
+      "category": "Pizza",
+      "details": []
+    },
+    {
+      "name": "Sm Pesto Chicken",
+      "item_price": "$13.50",
+      "category": "Pizza",
+      "details": []
+    },
+    {
+      "name": "Lg Pesto Chicken",
+      "item_price": "$20.50",
+      "category": "Pizza",
+      "details": []
+    },
+    {
+      "name": "Fam Pesto Chicken",
+      "item_price": 42.25,
+      "category": null,
+      "details": []
+    },
+    {
+      "name": "Shrimp Broccoli Alfredo",
+      "item_price": null,
+      "category": null,
+      "details": [
+        { "name": "Sm", "detail_price": 13.5 },
+        { "name": "Lg", "detail_price": 20.5 },
+        { "name": "Fam", "detail_price": 42.25 }
+      ]
+    },
+    {
+      "name": "Steak Combo",
+      "item_price": null,
+      "category": null,
+      "details": [
+        { "name": "Sm", "detail_price": 13.5 },
+        { "name": "Lg", "detail_price": 20.5 },
+        { "name": "Fam", "detail_price": 42.25 }
+      ]
+    },
+    {
+      "name": "Chicken Stir Fry",
+      "item_price": [13.5, 20.5, 42.25],
+      "category": "main",
+      "details": [
+        {
+          "name": "Grilled chicken, onions, peppers & mushrooms",
+          "detail_price": 0
+        }
+      ]
+    },
+    {
+      "name": "Pollo Pizza",
+      "item_price": [13.5, 20.5, 42.25],
+      "category": "pizza",
+      "details": [
+        {
+          "name": "Sliced tomatoes, fresh grilled chicken & garlic",
+          "detail_price": 0
+        }
+      ]
+    },
+    {
+      "name": "Mac Pizza",
+      "item_price": [],
+      "category": "pizza",
+      "details": [
+        { "name": "Onions, tomatoes, hamburger & bacon", "detail_price": 0 }
+      ]
+    },
+    {
+      "name": "Mac Pizza",
+      "item_price": { "Sm": 13.5, "Lg": 20.5, "Fam": 42.25 },
+      "category": null,
+      "details": []
+    },
+    {
+      "name": "Mediterranean",
+      "item_price": { "Sm": 13.5, "Lg": 20.5, "Fam": 42.25 },
+      "category": null,
+      "details": []
+    },
+    {
+      "name": "Chicken Romano",
+      "item_price": { "Sm": 13.5 },
+      "category": null,
+      "details": []
+    },
+    {
+      "name": "Chicken Romano",
+      "item_price": [
+        { "size": "Sm", "price": "$13.50" },
+        { "size": "Lg", "price": "$20.50" },
+        { "size": "Fam", "price": "$42.25" }
+      ],
+      "category": "",
+      "details": []
+    },
+    {
+      "name": "Cheeseburger Deluxe",
+      "item_price": [
+        { "size": "Sm", "price": "$13.50" },
+        { "size": "Lg", "price": "$20.50" },
+        { "size": "Fam", "price": "$42.25" }
+      ],
+      "category": "",
+      "details": []
+    },
+    {
+      "name": "Chicken Jalapeno",
+      "item_price": [
+        { "size": "Sm", "price": "$13.50" },
+        { "size": "Lg", "price": "$20.50" }
+      ],
+      "category": "",
+      "details": []
+    },
+    {
+      "name": "Fam Chicken Jalapeno",
+      "item_price": "$42.25",
+      "category": null,
+      "details": []
+    },
+    {
+      "name": "Veggie Duplicate",
+      "item_price": null,
+      "category": null,
+      "details": [
+        { "name": "Sm Veggie Duplicate", "detail_price": 13.5 },
+        { "name": "Lg Veggie Duplicate", "detail_price": 20.5 },
+        { "name": "Fam Veggie Duplicate", "detail_price": 42.25 }
+      ]
+    },
+    {
+      "name": "Blt Pizza",
+      "item_price": null,
+      "category": "WHITE PIZZA",
+      "details": [
+        { "name": "Sm BLT Pizza", "detail_price": 13.5 },
+        { "name": "Lg BLT Pizza", "detail_price": 20.5 }
+      ]
+    }
+  ],
+  "restaurant_name": "Grand Slam Pizza",
+  "restaurant_address": "123 Main St."
+}

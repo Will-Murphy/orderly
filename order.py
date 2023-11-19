@@ -4,7 +4,7 @@ import json
 import os
 
 import openai
-from order_models import Menu, SalesAgent, logger
+from models.order_models import Menu, SalesAgent, logger
 
 
 

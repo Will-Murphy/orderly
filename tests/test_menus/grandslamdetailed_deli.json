@@ -1,0 +1,598 @@
+{
+    "menu_items": [
+        {
+            "name": "Cheese",
+            "item_price": null,
+            "category": null,
+            "details": [
+                {
+                    "name": "Sm Cheese",
+                    "detail_price": 8.75
+                },
+                {
+                    "name": "Lg Cheese",
+                    "detail_price": 13.75
+                },
+                {
+                    "name": "Fam Cheese",
+                    "detail_price": 26.75
+                }
+            ]
+        },
+        {
+            "name": "Gluten Free (One Size)",
+            "item_price": 11.0,
+            "category": null,
+            "details": []
+        },
+        {
+            "name": "Hawaiian",
+            "item_price": null,
+            "category": "GOURMET PIZZA",
+            "details": [
+                {
+                    "name": "Sm Hawaiian",
+                    "detail_price": 12.25
+                },
+                {
+                    "name": "Lg Hawaiian",
+                    "detail_price": 17.65
+                }
+            ]
+        },
+        {
+            "name": "Fam Hawaiian",
+            "item_price": "$36.75",
+            "category": null,
+            "details": []
+        },
+        {
+            "name": "Hawaiian Bbq",
+            "item_price": null,
+            "category": null,
+            "details": [
+                {
+                    "name": "Sm Hawaiian BBQ",
+                    "detail_price": 13.5
+                },
+                {
+                    "name": "Lg Hawaiian BBQ",
+                    "detail_price": 20.5
+                },
+                {
+                    "name": "Fam Hawaiian BBQ",
+                    "detail_price": 42.25
+                }
+            ]
+        },
+        {
+            "name": "Sweet And Spicy",
+            "item_price": null,
+            "category": null,
+            "details": [
+                {
+                    "name": "Sm Sweet and Spicy",
+                    "detail_price": 13.5
+                },
+                {
+                    "name": "Lg Sweet and Spicy",
+                    "detail_price": 20.5
+                },
+                {
+                    "name": "Fam Sweet and Spicy",
+                    "detail_price": 42.25
+                }
+            ]
+        },
+        {
+            "name": "Taco",
+            "item_price": null,
+            "category": null,
+            "details": [
+                {
+                    "name": "Sm Taco",
+                    "detail_price": 13.5
+                },
+                {
+                    "name": "Lg Taco",
+                    "detail_price": 20.5
+                },
+                {
+                    "name": "Fam Taco",
+                    "detail_price": 42.25
+                }
+            ]
+        },
+        {
+            "name": "Pastrami",
+            "item_price": null,
+            "category": null,
+            "details": [
+                {
+                    "name": "Sm Pastrami",
+                    "detail_price": 13.5
+                },
+                {
+                    "name": "Lg Pastrami",
+                    "detail_price": 20.5
+                },
+                {
+                    "name": "Fam Pastrami",
+                    "detail_price": 42.25
+                }
+            ]
+        },
+        {
+            "name": "Chicken Cordon Blue",
+            "item_price": null,
+            "category": null,
+            "details": []
+        },
+        {
+            "name": "Chicken Cordon Blue",
+            "item_price": null,
+            "category": null,
+            "details": [
+                {
+                    "name": "Sm Chicken Cordon Blue",
+                    "detail_price": 13.5
+                },
+                {
+                    "name": "Lg Chicken Cordon Blue",
+                    "detail_price": 20.5
+                },
+                {
+                    "name": "Fam Chicken Cordon Blue",
+                    "detail_price": 42.25
+                }
+            ]
+        },
+        {
+            "name": "Shrimp Scampi",
+            "item_price": null,
+            "category": null,
+            "details": [
+                {
+                    "name": "Sm Shrimp Scampi",
+                    "detail_price": 13.5
+                },
+                {
+                    "name": "Lg Shrimp Scampi",
+                    "detail_price": 20.5
+                },
+                {
+                    "name": "Fam Shrimp Scampi",
+                    "detail_price": 42.25
+                }
+            ]
+        },
+        {
+            "name": "Deluxe Special",
+            "item_price": null,
+            "category": null,
+            "details": [
+                {
+                    "name": "Sm Deluxe Special",
+                    "detail_price": 13.5
+                }
+            ]
+        },
+        {
+            "name": "Deluxe Special",
+            "item_price": null,
+            "category": null,
+            "details": [
+                {
+                    "name": "Lg",
+                    "detail_price": 20.5
+                },
+                {
+                    "name": "Fam",
+                    "detail_price": 42.25
+                }
+            ]
+        },
+        {
+            "name": "Meat Lovers",
+            "item_price": null,
+            "category": null,
+            "details": [
+                {
+                    "name": "Sm",
+                    "detail_price": 13.5
+                },
+                {
+                    "name": "Lg",
+                    "detail_price": 20.5
+                },
+                {
+                    "name": "Fam",
+                    "detail_price": 42.25
+                }
+            ]
+        },
+        {
+            "name": "Veggie",
+            "item_price": null,
+            "category": null,
+            "details": [
+                {
+                    "name": "Sm",
+                    "detail_price": 13.5
+                },
+                {
+                    "name": "Lg",
+                    "detail_price": 20.5
+                },
+                {
+                    "name": "Fam",
+                    "detail_price": 42.25
+                }
+            ]
+        },
+        {
+            "name": "Greek Special",
+            "item_price": null,
+            "category": null,
+            "details": [
+                {
+                    "name": "Sm Greek Special",
+                    "detail_price": 13.5
+                },
+                {
+                    "name": "Lg Greek Special",
+                    "detail_price": 20.5
+                },
+                {
+                    "name": "Fam Greek Special",
+                    "detail_price": 42.25
+                }
+            ]
+        },
+        {
+            "name": "Melanzana",
+            "item_price": null,
+            "category": null,
+            "details": [
+                {
+                    "name": "Sm Melanzana",
+                    "detail_price": 13.5
+                },
+                {
+                    "name": "Lg Melanzana",
+                    "detail_price": 20.5
+                },
+                {
+                    "name": "Fam Melanzana",
+                    "detail_price": 42.25
+                }
+            ]
+        },
+        {
+            "name": "Buffalo Chicken",
+            "item_price": null,
+            "category": null,
+            "details": []
+        },
+        {
+            "name": "Buffalo Chicken",
+            "item_price": "",
+            "category": "",
+            "details": [
+                {
+                    "name": "Sm Buffalo Chicken",
+                    "detail_price": 12.5
+                },
+                {
+                    "name": "Lg Buffalo Chicken",
+                    "detail_price": 19.5
+                },
+                {
+                    "name": "Fam Buffalo Chicken",
+                    "detail_price": 40
+                }
+            ]
+        },
+        {
+            "name": "Bbq Chicken",
+            "item_price": "",
+            "category": "",
+            "details": [
+                {
+                    "name": "Sm BBQ Chicken",
+                    "detail_price": 12.5
+                },
+                {
+                    "name": "Lg BBQ Chicken",
+                    "detail_price": 19.5
+                },
+                {
+                    "name": "Fam BBQ Chicken",
+                    "detail_price": 40
+                }
+            ]
+        },
+        {
+            "name": "Chicken Bacon Ranch",
+            "item_price": "",
+            "category": "",
+            "details": [
+                {
+                    "name": "Sm Chicken Bacon Ranch",
+                    "detail_price": 13.5
+                }
+            ]
+        },
+        {
+            "name": "Chicken Bacon Ranch",
+            "item_price": null,
+            "category": "menu_item col_2",
+            "details": [
+                {
+                    "name": "Lg Chicken Bacon Ranch",
+                    "detail_price": 20.5
+                },
+                {
+                    "name": "Fam Chicken Bacon Ranch",
+                    "detail_price": 42.25
+                }
+            ]
+        },
+        {
+            "name": "Chicken Broccoli Alfredo",
+            "item_price": null,
+            "category": "menu_item col_2",
+            "details": [
+                {
+                    "name": "Sm Chicken Broccoli Alfredo",
+                    "detail_price": 13.5
+                },
+                {
+                    "name": "Lg Chicken Broccoli Alfredo",
+                    "detail_price": 20.5
+                },
+                {
+                    "name": "Fam Chicken Broccoli Alfredo",
+                    "detail_price": 42.25
+                }
+            ]
+        },
+        {
+            "name": "Pesto Chicken",
+            "item_price": null,
+            "category": "menu_item col_1",
+            "details": [
+                {
+                    "name": "Sm Pesto Chicken",
+                    "detail_price": 13.5
+                },
+                {
+                    "name": "Lg Pesto Chicken",
+                    "detail_price": 20.5
+                }
+            ]
+        },
+        {
+            "name": "Shrimp Broccoli Alfredo",
+            "item_price": null,
+            "category": "Main Course",
+            "details": [
+                {
+                    "name": "Sm Shrimp Broccoli Alfredo",
+                    "detail_price": 13.5
+                },
+                {
+                    "name": "Lg Shrimp Broccoli Alfredo",
+                    "detail_price": 20.5
+                },
+                {
+                    "name": "Fam Shrimp Broccoli Alfredo",
+                    "detail_price": 42.25
+                }
+            ]
+        },
+        {
+            "name": "Steak Combo",
+            "item_price": null,
+            "category": "Main Course",
+            "details": [
+                {
+                    "name": "Sm Steak Combo",
+                    "detail_price": 13.5
+                },
+                {
+                    "name": "Lg Steak Combo",
+                    "detail_price": 20.5
+                },
+                {
+                    "name": "Fam Steak Combo",
+                    "detail_price": 42.25
+                }
+            ]
+        },
+        {
+            "name": "Chicken Stir Fry",
+            "item_price": null,
+            "category": null,
+            "details": [
+                {
+                    "name": "Sm Chicken Stir Fry",
+                    "detail_price": 13.5
+                },
+                {
+                    "name": "Lg Chicken Stir Fry",
+                    "detail_price": 20.5
+                },
+                {
+                    "name": "Fam Chicken Stir Fry",
+                    "detail_price": 42.25
+                }
+            ]
+        },
+        {
+            "name": "Pollo Pizza",
+            "item_price": null,
+            "category": null,
+            "details": [
+                {
+                    "name": "Sm Pollo Pizza",
+                    "detail_price": 13.5
+                },
+                {
+                    "name": "Lg Pollo Pizza",
+                    "detail_price": 20.5
+                },
+                {
+                    "name": "Fam Pollo Pizza",
+                    "detail_price": 42.25
+                }
+            ]
+        },
+        {
+            "name": "Mac Pizza",
+            "item_price": null,
+            "category": null,
+            "details": []
+        },
+        {
+            "name": "Mac Pizza",
+            "item_price": {
+                "Sm": 13.5,
+                "Lg": 20.5,
+                "Fam": 42.25
+            },
+            "category": null,
+            "details": [
+                {
+                    "name": "Thousand Island dressing base, fresh lettuce on top after it comes out of the oven",
+                    "detail_price": 0
+                }
+            ]
+        },
+        {
+            "name": "Mediterranean",
+            "item_price": {
+                "Sm": 13.5,
+                "Lg": 20.5,
+                "Fam": 42.25
+            },
+            "category": null,
+            "details": [
+                {
+                    "name": "Spinach, feta, tomatoes, black olives & chicken",
+                    "detail_price": 0
+                }
+            ]
+        },
+        {
+            "name": "Chicken Romano",
+            "item_price": {
+                "Sm": 13.5,
+                "Lg": null,
+                "Fam": null
+            },
+            "category": null,
+            "details": [
+                {
+                    "name": "Pepperoni, chicken & garlic",
+                    "detail_price": 0
+                }
+            ]
+        },
+        {
+            "name": "Chicken Romano",
+            "item_price": null,
+            "category": null,
+            "details": [
+                {
+                    "name": "Sm Chicken Romano",
+                    "detail_price": 13.5
+                },
+                {
+                    "name": "Lg Chicken Romano",
+                    "detail_price": 20.5
+                },
+                {
+                    "name": "Fam Chicken Romano",
+                    "detail_price": 42.25
+                }
+            ]
+        },
+        {
+            "name": "Cheeseburger Deluxe",
+            "item_price": null,
+            "category": null,
+            "details": [
+                {
+                    "name": "Sm Cheeseburger Deluxe",
+                    "detail_price": 13.5
+                },
+                {
+                    "name": "Lg Cheeseburger Deluxe",
+                    "detail_price": 20.5
+                },
+                {
+                    "name": "Fam Cheeseburger Deluxe",
+                    "detail_price": 42.25
+                }
+            ]
+        },
+        {
+            "name": "Chicken Jalapeno",
+            "item_price": null,
+            "category": null,
+            "details": [
+                {
+                    "name": "Sm Chicken Jalapeno",
+                    "detail_price": 13.5
+                },
+                {
+                    "name": "Lg Chicken Jalapeno",
+                    "detail_price": 20.5
+                }
+            ]
+        },
+        {
+            "name": "Fam Chicken Jalapeno",
+            "item_price": "$42.25",
+            "category": null,
+            "details": []
+        },
+        {
+            "name": "Veggie Duplicate",
+            "item_price": null,
+            "category": null,
+            "details": [
+                {
+                    "name": "Sm Veggie Duplicate",
+                    "detail_price": 13.5
+                },
+                {
+                    "name": "Lg Veggie Duplicate",
+                    "detail_price": 20.5
+                },
+                {
+                    "name": "Fam Veggie Duplicate",
+                    "detail_price": 42.25
+                }
+            ]
+        },
+        {
+            "name": "Blt Pizza",
+            "item_price": null,
+            "category": "WHITE PIZZA",
+            "details": [
+                {
+                    "name": "Sm BLT Pizza",
+                    "detail_price": 13.5
+                },
+                {
+                    "name": "Lg BLT Pizza",
+                    "detail_price": 20.5
+                }
+            ]
+        }
+    ],
+    "restaurant": "Grand Slam Pizza",
+    "restaurant_address": "355 Turnpike St., Canton, MA 02021"
+}

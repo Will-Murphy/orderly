@@ -1,27 +1,23 @@
 import argparse
-from dataclasses import dataclass, field, asdict
+import json
+import os
+import time
 import traceback
+from dataclasses import asdict, dataclass, field
 from typing import List
-from abstract_models import AbstractAgent, AbstractOrderData
+
+import openai
+from selenium import webdriver
+from selenium.common.exceptions import TimeoutException
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support import ui
+from webdriver_manager.chrome import ChromeDriverManager
+
 from completion_api import ApiModels
 from logger import Logger
-import openai
-import os
-import json
-import time
-
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from webdriver_manager.chrome import ChromeDriverManager
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support import ui
-
-from selenium import webdriver
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.by import By
-from selenium.common.exceptions import TimeoutException
-
-
+from models.abstract_models import AbstractAgent, AbstractOrderData
 
 CHROME_PATH = (
     "/Users/williammurphy/Downloads/Google Chrome.app/Contents/MacOS/Google Chrome"
@@ -202,7 +198,7 @@ class ScraperAgent(AbstractAgent):
     @property
     def functions(self):
         return SCRAPING_FUNCTIONS
-    
+
     @property
     def logger(self):
         return logger
@@ -288,7 +284,7 @@ class ScraperAgent(AbstractAgent):
 
             prompt = self.get_scraping_prompt(current_chunk)
 
-            max_tries = 3 
+            max_tries = 3
             tries = 0
             error = None
             while tries < max_tries:
@@ -365,7 +361,7 @@ def main():
     args = parser.parse_args()
 
     ms = ScraperAgent()
-    
+
     # Create a menu from the text
     menu_html = ms.scrape(args.url)
     menu = ms.process_scraped_menu(menu_html, chunk_size=args.chunks, max=args.max_len)

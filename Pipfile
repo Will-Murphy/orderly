@@ -13,6 +13,8 @@ webdriver-manager = "*"
 pyttsx3 = "*"
 pyobjc = "*"
 halo = "*"
+pydub = "*"
+simpleaudio = "*"
 
 [dev-packages]
 
