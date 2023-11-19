@@ -6,7 +6,7 @@ import os
 import openai
 from order_models import Menu, SalesAgent, logger
 
-openai.api_key = os.getenv("OPENAI_API_KEY")
+
 
 TEST_MENU_DIR = "tests/test_menus"
 

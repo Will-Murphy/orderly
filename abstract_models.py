@@ -8,10 +8,12 @@ from typing import Dict, List, Tuple
 from completion_api import ApiModels
 from logger import Logger
 from halo import Halo
+import os
 
 
-import openai
-from speech import listen, speak
+from openai import OpenAI
+
+from speech import listen, listen_new, speak, speak_new
 from utils import get_generic_order_waiting_phrases, halo_context
 
 
@@ -33,7 +35,7 @@ class AbstractOrderData:
     @classmethod
     def from_api_response(cls, response, **kwargs) -> AbstractOrderData:
         reply_content = response.choices[0].message
-        string_order_kwargs = reply_content.to_dict()["function_call"]["arguments"]
+        string_order_kwargs = dict(reply_content)["function_call"].arguments
         order_kwargs = json.loads(string_order_kwargs)
         cls_args = {**kwargs, **order_kwargs}
         return cls(**cls_args)
@@ -44,7 +46,7 @@ class UsageData:
     prompt_tokens: int = 0
     completion_tokens: int = 0
     total_tokens: int = 0
-    
+
     def add_usage(self, response):
         self.prompt_tokens += response.usage.prompt_tokens
         self.completion_tokens += response.usage.completion_tokens
@@ -56,6 +58,9 @@ class AbstractAgent:
     api_model: str = field(init=False, default=ApiModels.GPT4_T.value)
     message_history: List[Dict] = field(init=False, default_factory=list)
     usage_data: UsageData = field(init=False, default_factory=UsageData)
+
+    def __post_init__(self, *args, **kwargs):
+        self.client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
     @Halo(spinner="dots", color="green", text="Thinking...")
     def get_function_completion_response(
@@ -69,16 +74,16 @@ class AbstractAgent:
 
         self.logger.debug(f"For response messages: {json.dumps(messages,indent=4)}")
 
-        completion = openai.ChatCompletion.create(
+        completion = self.client.chat.completions.create(
             model=self.api_model,
             messages=messages,
             functions=[self.functions[fn_name]] if fn_name else None,
             function_call={"name": fn_name},
             **api_kwargs,
         )
-        
+
         self.usage_data.add_usage(completion)
-    
+
         return completion
 
     @property
@@ -90,6 +95,9 @@ class AbstractAgent:
         raise NotImplementedError
 
     def get_system_message(self):
+        raise NotImplementedError
+
+    def get_listen_prompt(self):
         raise NotImplementedError
 
     def add_user_message(self, msg):
@@ -114,7 +122,7 @@ class AbstractAgent:
                     response = listen(self.logger)
                     while not response:
                         print(err_msg + "\n\n")
-                        speak(err_msg)
+                        speak_new(self.client, err_msg)
                         response = listen(self.logger)
 
                 else:
@@ -130,7 +138,7 @@ class AbstractAgent:
 
             if msg:
                 print(msg + display_summary + "\n\n")
-                speak(msg + speech_summary)
+                speak_new(self.client, msg + speech_summary)
 
             if msg and add_to_message_history:
                 self.add_agent_message(msg)

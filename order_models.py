@@ -11,10 +11,7 @@ from abstract_models import AbstractAgent, AbstractOrderData
 from logger import Logger
 
 
-import openai
-from tests.mock_reponse import get_mock_response
 from utils import get_innermost_items
-
 
 
 TEST_MENU_DIR = "tests/test_menus"
@@ -56,8 +53,8 @@ class Item(AbstractOrderData):
     QAUNTITY = "quantity"
 
     name: str
-    details: List[str]
-    quantity: int
+    details: List[str] = field(default_factory=list)
+    quantity: int = field(default=0)
 
     def __post_init__(self):
         self.name = self.name.title()
@@ -320,6 +317,12 @@ class SalesAgent(AbstractAgent):
             ),
         }
 
+    def get_listen_prompt(self):
+        return (
+            f"You are a 'smart' server at restaurant {self.menu.restaurant_name} "
+            f"interacting with a customer"
+        )
+
     def get_initial_prompt(self, user_input: str) -> str:
         prompt = f"Here is what the customer has asked for in their own words: \n '{user_input}'. \n"
 
@@ -351,10 +354,10 @@ class SalesAgent(AbstractAgent):
         while not (order.is_complete() and order.is_final()):
             if not order.is_complete():
                 order = self._clarify_order(order)
-                
+
             if order.is_complete() and not order.is_final():
                 order = self._finalize_order(order)
-                                
+
         self.communicate(
             order.human_response,
             display_summary=order.get_human_order_summary(),
@@ -362,7 +365,6 @@ class SalesAgent(AbstractAgent):
         )
         logger.debug(f"Customers Final Order: \n {order} \n")
         logger.debug(f"Total API Usage Data \n {self.usage_data} \n")
-
 
         return order
 
@@ -374,7 +376,6 @@ class SalesAgent(AbstractAgent):
 
         response = self.get_function_completion_response(
             initial_prompt, "process_user_order", with_message_history=True
-
         )
         logger.debug(f"API response: \n{response}\n")
 
@@ -402,19 +403,17 @@ class SalesAgent(AbstractAgent):
 
             logger.debug(f"\n Clarified prompt: \n {clarficiation_prompt}\n")
             response = self.get_function_completion_response(
-                clarficiation_prompt,
-                "clarify_user_order",
-                with_message_history=True
+                clarficiation_prompt, "clarify_user_order", with_message_history=True
             )
             logger.debug(f"API response: \n{response}\n")
 
             logger.debug(f"Raw Clarfied Order: \n {response} \n")
-            clarified_order = Order.from_api_response(response, self.menu)
-            logger.debug(f"Clarified Order: \n {clarified_order} \n")
+            order = Order.from_api_response(response, self.menu)
+            logger.debug(f"Clarified Order: \n {order} \n")
 
             logger.debug(f"Input Clarfied Order: \n {order} \n")
 
-        return clarified_order
+        return order
 
     def _finalize_order(self, order: Order) -> Order:
         final_response = self.communicate(
@@ -430,7 +429,6 @@ class SalesAgent(AbstractAgent):
 
         response = self.get_function_completion_response(
             finalization_prompt, "finalize_user_order", with_message_history=True
-
         )
         logger.debug(f"Finalization API response: \n{response}\n")
 

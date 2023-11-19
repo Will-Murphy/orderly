@@ -21,7 +21,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import TimeoutException
 
-openai.api_key = os.getenv("OPENAI_API_KEY")
+
 
 CHROME_PATH = (
     "/Users/williammurphy/Downloads/Google Chrome.app/Contents/MacOS/Google Chrome"
