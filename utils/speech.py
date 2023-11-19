@@ -14,6 +14,10 @@ def adjust_for_ambient_noise():
         recognizer.adjust_for_ambient_noise(source)
 
 
+async def adjust_for_ambient_noise_async():
+    adjust_for_ambient_noise()
+
+
 def listen(logger) -> str:
     with microphone as source:
         logger.debug("Listening for input...")

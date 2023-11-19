@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+import asyncio
 import datetime
 import json
-import os
 import random
 from collections import defaultdict
 from dataclasses import asdict, dataclass, field
@@ -342,20 +342,26 @@ class SalesAgent(AbstractAgent):
 
         return prompt
 
-    @AbstractAgent.calibrate_listening
     def process_order(self) -> Order:
+        asyncio.run(self.process_order_async())
+
+    async def process_order_async(self) -> Order:
+        await self._process_order_async()
+
+    @AbstractAgent.calibrate_listening
+    async def _process_order_async(self) -> Order:
         initial_input = self.communicate(
             f"Hi, welcome to {self.menu.restaurant_name}. What can I get for you today? \n",
             get_response=True,
         )
-        order = self._initialize_order(initial_input)
+        order = await self._initialize_order(initial_input)
 
         while not (order.is_complete() and order.is_final()):
             if not order.is_complete():
-                order = self._clarify_order(order)
+                order = await self._clarify_order(order)
 
             if order.is_complete() and not order.is_final():
-                order = self._finalize_order(order)
+                order = await self._finalize_order(order)
 
         self.communicate(
             order.human_response,
@@ -367,7 +373,7 @@ class SalesAgent(AbstractAgent):
 
         return order
 
-    def _initialize_order(self, user_input: str) -> Order:
+    async def _initialize_order(self, user_input: str) -> Order:
         initial_prompt = self.get_initial_prompt(user_input)
         logger.debug(f"\nInitial prompt completion: \n {initial_prompt}\n")
 
@@ -384,13 +390,13 @@ class SalesAgent(AbstractAgent):
         return order
 
     @AbstractAgent.calibrate_listening
-    def _clarify_order(self, order: Order) -> Order:
+    async def _clarify_order(self, order: Order) -> Order:
         if not order.menu_items:
             retry_input = self.communicate(
                 order.human_response,
                 get_response=True,
             )
-            order = self._initialize_order(retry_input)
+            order = await self._initialize_order(retry_input)
         else:
             user_clar_input = self.communicate(
                 order.human_response,
@@ -416,7 +422,7 @@ class SalesAgent(AbstractAgent):
         return order
 
     @AbstractAgent.calibrate_listening
-    def _finalize_order(self, order: Order) -> Order:
+    async def _finalize_order(self, order: Order) -> Order:
         final_response = self.communicate(
             order.human_response,
             display_summary=order.get_human_order_summary(),

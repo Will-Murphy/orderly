@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import os
 import random
@@ -12,7 +13,14 @@ from openai import OpenAI
 
 from completion_api import ApiModels
 from logger import Logger
-from utils.speech import adjust_for_ambient_noise, listen, listen_new, speak, speak_new
+from utils.speech import (
+    adjust_for_ambient_noise,
+    adjust_for_ambient_noise_async,
+    listen,
+    listen_new,
+    speak,
+    speak_new,
+)
 from utils.ux import (
     get_generic_order_waiting_phrases,
     get_generic_requests_to_repeat_order,
@@ -161,9 +169,15 @@ class AbstractAgent:
     @staticmethod
     def calibrate_listening(func):
         @wraps(func)
-        def wrapper(*args, **kwargs):
+        async def wrapper(*args, **kwargs):
             args[0].logger.debug("Adjusting for ambient noise...")
-            adjust_for_ambient_noise()
-            return func(*args, **kwargs)
+
+            async def adjust_for_ambient_noise_task():
+                await adjust_for_ambient_noise_async()
+
+            asyncio.create_task(adjust_for_ambient_noise_task())
+
+            result = await func(*args, **kwargs)
+            return result
 
         return wrapper
