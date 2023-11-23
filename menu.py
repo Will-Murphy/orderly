@@ -287,14 +287,14 @@ class ScraperAgent(AbstractAgent):
             error = None
             while tries < max_tries:
                 if error is None:
-                    response = self.get_function_completion_response(
+                    response = self.get_func_completion_res(
                         prompt, "process_scraped_menu"
                     )
                     logger.debug(f"Got response from API: \n\n {response}")
                 else:
                     logger.debug(f"Retrying with error: \n\n {error}")
                     retry_prompt = self.get_retry_prompt(current_chunk, error)
-                    response = self.get_function_completion_response(
+                    response = self.get_func_completion_res(
                         retry_prompt, "process_scraped_menu"
                     )
 

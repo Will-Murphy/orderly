@@ -15,7 +15,7 @@ from utils.utils import get_innermost_items
 TEST_MENU_DIR = "tests/test_menus"
 
 logger = Logger("order_logger")
-    
+
 random.seed(datetime.datetime.now())
 
 
@@ -377,9 +377,7 @@ class SalesAgent(AbstractAgent):
         initial_prompt = self.get_initial_prompt(user_input)
         logger.debug(f"\nInitial prompt completion: \n {initial_prompt}\n")
 
-        self.waiting_for_api_response()
-
-        response = self.get_function_completion_response(
+        response = await self.get_func_completion_res_with_waiting(
             initial_prompt, "process_user_order", with_message_history=True
         )
         logger.debug(f"API response: \n{response}\n")
@@ -405,10 +403,8 @@ class SalesAgent(AbstractAgent):
             )
             clarficiation_prompt = self.get_clarification_prompt(user_clar_input, order)
 
-            self.waiting_for_api_response()
-
             logger.debug(f"\n Clarified prompt: \n {clarficiation_prompt}\n")
-            response = self.get_function_completion_response(
+            response = await self.get_func_completion_res_with_waiting(
                 clarficiation_prompt, "clarify_user_order", with_message_history=True
             )
             logger.debug(f"API response: \n{response}\n")
@@ -432,9 +428,7 @@ class SalesAgent(AbstractAgent):
 
         finalization_prompt = self.get_finalization_prompt(final_response)
 
-        self.waiting_for_api_response()
-
-        response = self.get_function_completion_response(
+        response = await self.get_func_completion_res_with_waiting(
             finalization_prompt, "finalize_user_order", with_message_history=True
         )
         logger.debug(f"Finalization API response: \n{response}\n")

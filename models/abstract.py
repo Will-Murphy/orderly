@@ -74,7 +74,7 @@ class AbstractAgent:
         self.client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
     @Halo(spinner="dots", color="green", text="Thinking...")
-    def get_function_completion_response(
+    def get_func_completion_res(
         self, prompt: str, fn_name: str = None, with_message_history=False, **api_kwargs
     ):
         messages = [
@@ -94,6 +94,19 @@ class AbstractAgent:
         )
 
         self.usage_data.add_usage(completion)
+
+        return completion
+
+    async def get_func_completion_res_with_waiting(self, *args, **kwargs):
+        waiting_res = asyncio.create_task(self.waiting_for_api_response())
+
+        completion = await asyncio.to_thread(
+            self.get_func_completion_res,
+            *args,
+            **kwargs,
+        )
+
+        await waiting_res
 
         return completion
 
@@ -124,29 +137,31 @@ class AbstractAgent:
         display_summary: str = "",
         speech_summary: str = "",
         add_to_message_history=True,
+        with_ui_spinner=True,
     ) -> str | None:
-        with halo_context(spinner="dots", color="red") as spinner:
-
-            def listen_for() -> str:
-                if self.speak:
+        def listen_for(spinner=None) -> str:
+            if self.speak:
+                response = listen(self.logger)
+                while not response:
+                    err_msg = random.choice(get_generic_requests_to_repeat_order())
+                    print(err_msg + "\n\n")
+                    speak_new(self.client, err_msg)
                     response = listen(self.logger)
-                    while not response:
-                        err_msg = random.choice(get_generic_requests_to_repeat_order())
-                        print(err_msg + "\n\n")
-                        speak_new(self.client, err_msg)
-                        response = listen(self.logger)
 
-                else:
+            else:
+                if spinner:
                     spinner.stop()
-                    while True:
-                        response = input("waiting for response... \n\n")
-                        if response:  # if the user entered something
-                            break  # exit the loop
-                        else:
-                            input(err_msg)
 
-                return response
+                while True:
+                    response = input("waiting for response... \n\n")
+                    if response:  # if the user entered something
+                        break  # exit the loop
+                    else:
+                        input(err_msg)
 
+            return response
+
+        def do_communication(spinner=None):
             if msg:
                 print(msg + display_summary + "\n\n")
                 speak_new(self.client, msg + speech_summary)
@@ -154,16 +169,26 @@ class AbstractAgent:
             if msg and add_to_message_history:
                 self.add_agent_message(msg)
             if get_response:
-                user_response = listen_for()
+                user_response = listen_for(spinner)
                 self.logger.info(f"user response: {user_response}")
                 if add_to_message_history:
                     self.add_user_message(user_response)
                 return user_response
 
-    def waiting_for_api_response(self):
-        self.communicate(
+        if with_ui_spinner:
+            with halo_context(spinner="dots", color="red") as spinner:
+                return do_communication(spinner)
+        else:
+            return do_communication()
+
+    async def communicate_async(self, *args, **kwargs):
+        return self.communicate(*args, **kwargs)
+
+    async def waiting_for_api_response(self):
+        await self.communicate_async(
             f"\n {random.choice(get_generic_order_waiting_phrases())} \n",
             add_to_message_history=False,
+            with_ui_spinner=False,
         )
 
     @staticmethod

@@ -1,11 +1,7 @@
 import contextlib
-import time
-from functools import wraps
 from typing import List
 
-import simpleaudio as sa
 from halo import Halo
-from pydub import AudioSegment
 
 
 @contextlib.contextmanager
