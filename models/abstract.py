@@ -214,11 +214,18 @@ class AbstractAgent:
                 except asyncio.CancelledError:
                     self.logger.debug("Ambient noise adjustment cancelled...")
 
+            task = None
             if self.speech_input:
                 self.logger.debug("Adjusting for ambient noise...")
-                asyncio.create_task(adjust_for_ambient_noise_task())
+                task = asyncio.create_task(adjust_for_ambient_noise_task())
 
             result = await func(self, *args, **kwargs)
+
+            # cancel if not done to avoid issues
+            if task and not task.done():
+                task.cancel()
+                await task
+
             return result
 
         return wrapper
