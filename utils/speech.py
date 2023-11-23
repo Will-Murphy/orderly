@@ -35,33 +35,6 @@ def listen(logger) -> str:
     return response
 
 
-def listen_new(client, logger, prompt=None) -> str:
-    with microphone as source:
-        audio_text = recognizer.listen(source)
-        audio_bytes_io = io.BytesIO(audio_text.get_wav_data())
-        audio_bytes_io.seek(0)
-
-        audio_fname = "microphone_input.wav"
-        with open(audio_fname, "wb") as file:
-            file.write(audio_bytes_io.read())
-
-        transcript = None
-        try:
-            audio_file = open(audio_fname, "rb")
-            transcript = client.audio.transcriptions.create(
-                model="whisper-1",
-                file=audio_file,
-                prompt=prompt,
-                response_format="text",
-            )
-            logger.debug(f"Your input was: {transcript}")
-        except Exception as e:
-            logger.debug("Listening failed with error: " + str(e))
-            logger.info("Sorry, I did not get that")
-
-    return transcript
-
-
 def speak(text: str, filename: str = "order_playback.mp3"):
     # Language in which you want to convert
     language = "en"

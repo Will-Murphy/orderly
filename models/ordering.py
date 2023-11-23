@@ -9,8 +9,14 @@ from dataclasses import asdict, dataclass, field
 from typing import DefaultDict, Dict, List, Tuple
 
 from logger import Logger
-from models.abstract import AbstractAgent, AbstractOrderData
+from models.base import (
+    AbstractAgent,
+    AbstractOrderData,
+    ApiResponseException,
+    NoInputException,
+)
 from utils.utils import get_innermost_items
+from utils.ux import get_generic_order_waiting_phrases
 
 TEST_MENU_DIR = "tests/test_menus"
 
@@ -294,6 +300,7 @@ ORDER_FUNCTIONS = {
 class SalesAgent(AbstractAgent):
     menu: Menu
     speech_input: bool = True
+    max_error_retries: int = 5
 
     @property
     def functions(self) -> Dict[str, Dict]:
@@ -343,25 +350,46 @@ class SalesAgent(AbstractAgent):
         return prompt
 
     def process_order(self) -> Order:
-        asyncio.run(self.process_order_async())
-
-    async def process_order_async(self) -> Order:
-        await self._process_order_async()
+        try:
+            asyncio.run(self.process_order_async())
+        except NoInputException as e:
+            logger.debug(f"No input error: \n{e}\n")
+            self.communicate(
+                "Sorry, it seems I am unable to hear you or that you've stepped away."
+            )
+            return
 
     @AbstractAgent.calibrate_listening
-    async def _process_order_async(self) -> Order:
+    async def process_order_async(self) -> Order:
         initial_input = self.communicate(
             f"Hi, welcome to {self.menu.restaurant_name}. What can I get for you today? \n",
             get_response=True,
         )
         order = await self._initialize_order(initial_input)
 
-        while not (order.is_complete() and order.is_final()):
-            if not order.is_complete():
-                order = await self._clarify_order(order)
+        api_errors = 0
 
-            if order.is_complete() and not order.is_final():
-                order = await self._finalize_order(order)
+        while not (order.is_complete() and order.is_final()):
+            try:
+                if not order.is_complete():
+                    order = await self._clarify_order(order)
+
+                if order.is_complete() and not order.is_final():
+                    order = await self._finalize_order(order)
+
+            except ApiResponseException as e:
+                logger.debug(f"API response error: \n{e}\n")
+                self._reinitialize_after_error()
+                api_errors += 1
+                continue
+
+            if api_errors >= self.max_error_retries:
+                logger.debug(f"Max API errors exceeded: {api_errors}\n")
+                self.communicate(
+                    "Sorry, there seems to be an issue with our system or the internet connection. "
+                    "Please try again later."
+                )
+                return
 
         self.communicate(
             order.human_response,
@@ -373,9 +401,9 @@ class SalesAgent(AbstractAgent):
 
         return order
 
-    async def _initialize_order(self, user_input: str) -> Order:
-        initial_prompt = self.get_initial_prompt(user_input)
-        logger.debug(f"\nInitial prompt completion: \n {initial_prompt}\n")
+    async def _initialize_order(self, user_input: str = "") -> Order:
+        initial_prompt = self.get_initial_prompt(user_input) if user_input else ""
+        logger.debug(f"\nInitialize order prompt: \n {initial_prompt}\n")
 
         response = await self.get_func_completion_res_with_waiting(
             initial_prompt, "process_user_order", with_message_history=True
@@ -384,6 +412,18 @@ class SalesAgent(AbstractAgent):
 
         order = Order.from_api_response(response, self.menu)
         logger.debug(f"Input Order: \n {order} \n")
+
+        return order
+
+    async def _reinitialize_after_error(self) -> Order:
+        self.communicate(
+            "Sorry, something went wrong processing your request. "
+            + random.choice(get_generic_order_waiting_phrases())
+        )
+        self.add_system_message(
+            "There was an issue processing the order up to this point, it must be retried."
+        )
+        order = await self._initialize_order()
 
         return order
 

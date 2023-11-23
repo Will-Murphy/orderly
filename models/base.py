@@ -6,26 +6,26 @@ import os
 import random
 from dataclasses import asdict, dataclass, field
 from functools import wraps
-from typing import Dict, List, Tuple
+from typing import Dict, List
 
 from halo import Halo
 from openai import OpenAI
 
 from completion_api import ApiModels
-from logger import Logger
-from utils.speech import (
-    adjust_for_ambient_noise,
-    adjust_for_ambient_noise_async,
-    listen,
-    listen_new,
-    speak,
-    speak_new,
-)
+from utils.speech import adjust_for_ambient_noise_async, listen, speak_new
 from utils.ux import (
     get_generic_order_waiting_phrases,
     get_generic_requests_to_repeat_order,
     halo_context,
 )
+
+
+class ApiResponseException(Exception):
+    pass
+
+
+class NoInputException(Exception):
+    pass
 
 
 @dataclass
@@ -49,7 +49,10 @@ class AbstractOrderData:
         string_order_kwargs = reply_content.tool_calls[0].function.arguments
         order_kwargs = json.loads(string_order_kwargs)
         cls_args = {**kwargs, **order_kwargs}
-        return cls(**cls_args)
+        try:
+            return cls(**cls_args)
+        except TypeError as e:
+            raise ApiResponseException("Unexpected API response format") from e
 
 
 @dataclass
@@ -69,19 +72,25 @@ class AbstractAgent:
     api_model: str = field(init=False, default=ApiModels.GPT4_T.value)
     message_history: List[Dict] = field(init=False, default_factory=list)
     usage_data: UsageData = field(init=False, default_factory=UsageData)
+    max_no_input_retries: int = field(init=False, default=1)
 
     def __post_init__(self, *args, **kwargs):
         self.client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
     @Halo(spinner="hamburger", color="grey", text="Thinking...")
     def get_func_completion_res(
-        self, prompt: str, fn_name: str = None, with_message_history=False, **api_kwargs
+        self,
+        prompt: str = "",
+        fn_name: str = None,
+        with_message_history=False,
+        **api_kwargs,
     ):
         messages = [
             self.get_system_message(),
             *(self.message_history if with_message_history else []),
-            {"role": "user", "content": prompt},
         ]
+        if prompt:
+            messages.append({"role": "user", "content": prompt})
 
         self.logger.debug(f"For response messages: {json.dumps(messages,indent=4)}")
 
@@ -134,6 +143,9 @@ class AbstractAgent:
     def add_agent_message(self, msg):
         self.message_history.append({"role": "assistant", "content": msg})
 
+    def add_system_message(self, msg):
+        self.message_history.append({"role": "system", "content": msg})
+
     def communicate(
         self,
         msg: str = "",
@@ -143,21 +155,32 @@ class AbstractAgent:
         add_to_message_history=True,
         with_ui_spinner=True,
     ) -> str | None:
-        def listen_for(speaking_spinner=None) -> str:
-            if speaking_spinner:
-                speaking_spinner.stop()
+        def listen_for(speaking_spinner) -> str:
+            speaking_spinner.stop()
 
             with halo_context(
                 spinner="hamburger", color="green", text="Listening..."
             ) as listening_spinner:
                 if self.speech_input:
                     response = listen(self.logger)
+                    no_input_retries = 0
                     while not response:
                         err_msg = random.choice(get_generic_requests_to_repeat_order())
                         print(err_msg + "\n\n")
+
+                        listening_spinner.stop()
+                        speaking_spinner.start()
                         speak_new(self.client, err_msg)
+
+                        speaking_spinner.stop()
+                        listening_spinner.start()
                         response = listen(self.logger)
 
+                        no_input_retries += 1
+                        if no_input_retries >= self.max_no_input_retries:
+                            raise NoInputException(
+                                "No input detected after max retries"
+                            )
                 else:
                     if listening_spinner:
                         listening_spinner.stop()
@@ -171,7 +194,12 @@ class AbstractAgent:
 
                 return response
 
-        def do_communication(spinner=None):
+        with halo_context(
+            spinner="hamburger",
+            color="red",
+            text="Speaking...",
+            enabled=with_ui_spinner,
+        ) as speaking_spinner:
             if msg:
                 print(msg + display_summary + "\n\n")
                 speak_new(self.client, msg + speech_summary)
@@ -179,19 +207,11 @@ class AbstractAgent:
             if msg and add_to_message_history:
                 self.add_agent_message(msg)
             if get_response:
-                user_response = listen_for(spinner)
+                user_response = listen_for(speaking_spinner)
                 self.logger.info(f"user response: {user_response}")
                 if add_to_message_history:
                     self.add_user_message(user_response)
                 return user_response
-
-        if with_ui_spinner:
-            with halo_context(
-                spinner="hamburger", color="red", text="Speaking..."
-            ) as speaking_spinner:
-                return do_communication(speaking_spinner)
-        else:
-            return do_communication()
 
     async def communicate_async(self, *args, **kwargs):
         return self.communicate(*args, **kwargs)

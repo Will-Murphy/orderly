@@ -15,7 +15,7 @@ from selenium.webdriver.support import ui
 from webdriver_manager.chrome import ChromeDriverManager
 
 from logger import Logger
-from models.abstract import AbstractAgent, AbstractOrderData
+from models.base import AbstractAgent, AbstractOrderData
 
 CHROME_PATH = (
     "/Users/williammurphy/Downloads/Google Chrome.app/Contents/MacOS/Google Chrome"
