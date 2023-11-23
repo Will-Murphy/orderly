@@ -6,7 +6,6 @@ import traceback
 from dataclasses import asdict, dataclass, field
 from typing import List
 
-import openai
 from selenium import webdriver
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.chrome.service import Service
@@ -15,9 +14,8 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support import ui
 from webdriver_manager.chrome import ChromeDriverManager
 
-from completion_api import ApiModels
 from logger import Logger
-from models.abstract_models import AbstractAgent, AbstractOrderData
+from models.abstract import AbstractAgent, AbstractOrderData
 
 CHROME_PATH = (
     "/Users/williammurphy/Downloads/Google Chrome.app/Contents/MacOS/Google Chrome"

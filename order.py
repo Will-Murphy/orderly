@@ -1,12 +1,7 @@
 import argparse
-import ast
 import json
-import os
 
-import openai
-from models.order_models import Menu, SalesAgent, logger
-
-
+from models.ordering import Menu, SalesAgent, logger
 
 TEST_MENU_DIR = "tests/test_menus"
 

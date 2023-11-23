@@ -169,15 +169,15 @@ class AbstractAgent:
     @staticmethod
     def calibrate_listening(func):
         @wraps(func)
-        async def wrapper(*args, **kwargs):
-            args[0].logger.debug("Adjusting for ambient noise...")
-
+        async def wrapper(self, *args, **kwargs):
             async def adjust_for_ambient_noise_task():
                 await adjust_for_ambient_noise_async()
 
-            asyncio.create_task(adjust_for_ambient_noise_task())
+            if self.speak:
+                self.logger.debug("Adjusting for ambient noise...")
+                asyncio.create_task(adjust_for_ambient_noise_task())
 
-            result = await func(*args, **kwargs)
+            result = await func(self, *args, **kwargs)
             return result
 
         return wrapper

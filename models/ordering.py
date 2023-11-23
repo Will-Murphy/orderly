@@ -9,13 +9,13 @@ from dataclasses import asdict, dataclass, field
 from typing import DefaultDict, Dict, List, Tuple
 
 from logger import Logger
-from models.abstract_models import AbstractAgent, AbstractOrderData
+from models.abstract import AbstractAgent, AbstractOrderData
 from utils.utils import get_innermost_items
 
 TEST_MENU_DIR = "tests/test_menus"
 
 logger = Logger("order_logger")
-
+    
 random.seed(datetime.datetime.now())
 
 
