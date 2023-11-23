@@ -46,7 +46,7 @@ class AbstractOrderData:
     @classmethod
     def from_api_response(cls, response, **kwargs) -> AbstractOrderData:
         reply_content = response.choices[0].message
-        string_order_kwargs = dict(reply_content)["function_call"].arguments
+        string_order_kwargs = reply_content.tool_calls[0].function.arguments
         order_kwargs = json.loads(string_order_kwargs)
         cls_args = {**kwargs, **order_kwargs}
         return cls(**cls_args)
@@ -85,11 +85,15 @@ class AbstractAgent:
 
         self.logger.debug(f"For response messages: {json.dumps(messages,indent=4)}")
 
+        function_as_tool = {"type": "function", "function": self.functions[fn_name]}
+
+        function_call = {"type": "function", "function": {"name": fn_name}}
+
         completion = self.client.chat.completions.create(
             model=self.api_model,
             messages=messages,
-            functions=[self.functions[fn_name]] if fn_name else None,
-            function_call={"name": fn_name},
+            tools=[function_as_tool],
+            tool_choice=function_call,
             **api_kwargs,
         )
 

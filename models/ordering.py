@@ -173,12 +173,14 @@ class Order(AbstractOrderData):
     def get_human_order_summary(self, speech_only=False) -> str:
         hpo = f"Your order is listed below: \n"
 
-        if speech_only:
-            for item, (subtotal, count) in self.processed_order.items():
+        for item, (subtotal, count) in self.processed_order.items():
+            if speech_only:
                 hpo += f"\n {count} of {item.name}"
-        else:
-            for item, (subtotal, count) in self.processed_order.items():
+            else:
                 hpo += f"\n * {item.name}: {count} x {self.menu.flat_menu_items[item.name]} = ${subtotal}"
+
+            for detail in item.details:
+                hpo += f"\n    - {detail}"
 
         hpo += f"\n\nFor a total price of: ${self.total_price} \n"
 
@@ -296,7 +298,7 @@ class SalesAgent(AbstractAgent):
     speak: bool = True
 
     @property
-    def functions(self):
+    def functions(self) -> Dict[str, Dict]:
         return ORDER_FUNCTIONS
 
     @property
