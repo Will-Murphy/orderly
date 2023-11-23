@@ -19,6 +19,9 @@ from utils.ux import (
     halo_context,
 )
 
+DEFAULT_MAX_NO_INPUT_RETRIES = 5
+DEFAULT_MAX_API_RETRIES = 3
+
 
 class ApiResponseException(Exception):
     pass
@@ -72,7 +75,7 @@ class AbstractAgent:
     api_model: str = field(init=False, default=ApiModels.GPT4_T.value)
     message_history: List[Dict] = field(init=False, default_factory=list)
     usage_data: UsageData = field(init=False, default_factory=UsageData)
-    max_no_input_retries: int = field(init=False, default=1)
+    max_no_input_retries: int = field(init=False, default=DEFAULT_MAX_NO_INPUT_RETRIES)
 
     def __post_init__(self, *args, **kwargs):
         self.client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
@@ -111,7 +114,9 @@ class AbstractAgent:
         return completion
 
     async def get_func_completion_res_with_waiting(self, *args, **kwargs):
-        waiting_res = asyncio.create_task(self.waiting_for_api_response())
+        waiting_res = asyncio.create_task(self.waiting_for_api_response_task())
+
+        noise_adjustment = asyncio.create_task(self.adjust_for_ambient_noise_task())
 
         completion = await asyncio.to_thread(
             self.get_func_completion_res,
@@ -120,6 +125,12 @@ class AbstractAgent:
         )
 
         await waiting_res
+
+        # cancel if not done to avoid slowing response
+        if not noise_adjustment.done():
+            noise_adjustment.cancel()
+
+        await noise_adjustment
 
         return completion
 
@@ -216,36 +227,16 @@ class AbstractAgent:
     async def communicate_async(self, *args, **kwargs):
         return self.communicate(*args, **kwargs)
 
-    async def waiting_for_api_response(self):
+    async def waiting_for_api_response_task(self):
         await self.communicate_async(
             f"\n {random.choice(get_generic_order_waiting_phrases())} \n",
             add_to_message_history=False,
             with_ui_spinner=False,
         )
 
-    @staticmethod
-    def calibrate_listening(func):
-        @wraps(func)
-        async def wrapper(self, *args, **kwargs):
-            async def adjust_for_ambient_noise_task():
-                try:
-                    await adjust_for_ambient_noise_async()
-                    self.logger.debug("Ambient noise adjustment done...")
-                except asyncio.CancelledError:
-                    self.logger.debug("Ambient noise adjustment cancelled...")
-
-            task = None
-            if self.speech_input:
-                self.logger.debug("Adjusting for ambient noise...")
-                task = asyncio.create_task(adjust_for_ambient_noise_task())
-
-            result = await func(self, *args, **kwargs)
-
-            # cancel if not done to avoid issues
-            if task and not task.done():
-                task.cancel()
-                await task
-
-            return result
-
-        return wrapper
+    async def adjust_for_ambient_noise_task(self):
+        try:
+            await adjust_for_ambient_noise_async()
+            self.logger.debug("Ambient noise adjustment done...")
+        except asyncio.CancelledError:
+            self.logger.debug("Ambient noise adjustment cancelled...")

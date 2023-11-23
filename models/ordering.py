@@ -10,6 +10,7 @@ from typing import DefaultDict, Dict, List, Tuple
 
 from logger import Logger
 from models.base import (
+    DEFAULT_MAX_API_RETRIES,
     AbstractAgent,
     AbstractOrderData,
     ApiResponseException,
@@ -300,7 +301,7 @@ ORDER_FUNCTIONS = {
 class SalesAgent(AbstractAgent):
     menu: Menu
     speech_input: bool = True
-    max_error_retries: int = 5
+    max_error_retries: int = DEFAULT_MAX_API_RETRIES
 
     @property
     def functions(self) -> Dict[str, Dict]:
@@ -359,8 +360,9 @@ class SalesAgent(AbstractAgent):
             )
             return
 
-    @AbstractAgent.calibrate_listening
     async def process_order_async(self) -> Order:
+        await self.adjust_for_ambient_noise_task()
+
         initial_input = self.communicate(
             f"Hi, welcome to {self.menu.restaurant_name}. What can I get for you today? \n",
             get_response=True,
@@ -379,7 +381,7 @@ class SalesAgent(AbstractAgent):
 
             except ApiResponseException as e:
                 logger.debug(f"API response error: \n{e}\n")
-                self._reinitialize_after_error()
+                order = await self._reinitialize_after_error()
                 api_errors += 1
                 continue
 
@@ -427,7 +429,6 @@ class SalesAgent(AbstractAgent):
 
         return order
 
-    @AbstractAgent.calibrate_listening
     async def _clarify_order(self, order: Order) -> Order:
         if not order.menu_items:
             retry_input = self.communicate(
@@ -457,7 +458,6 @@ class SalesAgent(AbstractAgent):
 
         return order
 
-    @AbstractAgent.calibrate_listening
     async def _finalize_order(self, order: Order) -> Order:
         final_response = self.communicate(
             order.human_response,
