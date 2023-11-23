@@ -47,6 +47,6 @@ python order.py --menu "grandslam_deli" --log_level 2
 ### Arg details
 - --menu_name: Name of the menu file to use (Default: "archies_deli")
 - --mock: Use mock API response for testing (Default: False)
-- --speak: Enable or disable speech recognition and responses (Default: False)
+- --speech_input: Enable or disable speech recognition and responses (Default: False)
 - --log_level: Logging level (Default: 1/DEBUG)
 

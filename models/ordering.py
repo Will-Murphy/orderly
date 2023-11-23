@@ -193,7 +193,7 @@ class Order(AbstractOrderData):
     @classmethod
     def get_schema(
         cls,
-        menu_items_desc="A structured mapping to the exact menu items the user has asked for.",
+        menu_items_desc="A structured mapping to all the unique menu items the user has asked for during their session.",
         unrec_items_desc="A structured mapping of items not directly mentioned in the menu AFTER clarification.",
         single_unrec_name_desc="key user mentioned that was not found in the menu.",
         is_completed_desc="Whether or not the order has been sufficiently clarified",
@@ -258,14 +258,13 @@ ORDER_FUNCTIONS = {
         ),
         "parameters": {
             **Order.get_schema(
-                menu_items_desc="A structured mapping to the exact menu items the user has asked for.",
                 unrec_items_desc=(
                     f"A structure of items from the users current input that were not clarified. If the users "
                     f"current input is clear then this should be empty."
                 ),
                 single_unrec_name_desc="key user mentioned that was not found in the menu.",
                 is_completed_desc="Whether or not the order has been sufficiently clarified and is ready to be processed.",
-                human_res_desc="A CREATIVE, WITTY GREETING TO THE CUSTOMER",
+                human_res_desc="A CREATIVE, WITTY GREETING TO THE CUSTOMER that matches the is_completed status of the order.",
             )
         },
     },
@@ -279,7 +278,6 @@ ORDER_FUNCTIONS = {
         ),
         "parameters": {
             **Order.get_schema(
-                menu_items_desc="A structured mapping of all the unique menu items the user has asked fo during their session.",
                 unrec_items_desc=(
                     f"Any items that have not are not clear during finalization"
                 ),
@@ -295,7 +293,7 @@ ORDER_FUNCTIONS = {
 @dataclass
 class SalesAgent(AbstractAgent):
     menu: Menu
-    speak: bool = True
+    speech_input: bool = True
 
     @property
     def functions(self) -> Dict[str, Dict]:

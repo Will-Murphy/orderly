@@ -73,7 +73,7 @@ class AbstractAgent:
     def __post_init__(self, *args, **kwargs):
         self.client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-    @Halo(spinner="dots", color="green", text="Thinking...")
+    @Halo(spinner="hamburger", color="grey", text="Thinking...")
     def get_func_completion_res(
         self, prompt: str, fn_name: str = None, with_message_history=False, **api_kwargs
     ):
@@ -143,27 +143,33 @@ class AbstractAgent:
         add_to_message_history=True,
         with_ui_spinner=True,
     ) -> str | None:
-        def listen_for(spinner=None) -> str:
-            if self.speak:
-                response = listen(self.logger)
-                while not response:
-                    err_msg = random.choice(get_generic_requests_to_repeat_order())
-                    print(err_msg + "\n\n")
-                    speak_new(self.client, err_msg)
+        def listen_for(speaking_spinner=None) -> str:
+            if speaking_spinner:
+                speaking_spinner.stop()
+
+            with halo_context(
+                spinner="hamburger", color="green", text="Listening..."
+            ) as listening_spinner:
+                if self.speech_input:
                     response = listen(self.logger)
+                    while not response:
+                        err_msg = random.choice(get_generic_requests_to_repeat_order())
+                        print(err_msg + "\n\n")
+                        speak_new(self.client, err_msg)
+                        response = listen(self.logger)
 
-            else:
-                if spinner:
-                    spinner.stop()
+                else:
+                    if listening_spinner:
+                        listening_spinner.stop()
 
-                while True:
-                    response = input("waiting for response... \n\n")
-                    if response:  # if the user entered something
-                        break  # exit the loop
-                    else:
-                        input(err_msg)
+                    while True:
+                        response = input("waiting for response... \n\n")
+                        if response:  # if the user entered something
+                            break  # exit the loop
+                        else:
+                            input(err_msg)
 
-            return response
+                return response
 
         def do_communication(spinner=None):
             if msg:
@@ -180,8 +186,10 @@ class AbstractAgent:
                 return user_response
 
         if with_ui_spinner:
-            with halo_context(spinner="dots", color="red") as spinner:
-                return do_communication(spinner)
+            with halo_context(
+                spinner="hamburger", color="red", text="Speaking..."
+            ) as speaking_spinner:
+                return do_communication(speaking_spinner)
         else:
             return do_communication()
 
@@ -200,9 +208,13 @@ class AbstractAgent:
         @wraps(func)
         async def wrapper(self, *args, **kwargs):
             async def adjust_for_ambient_noise_task():
-                await adjust_for_ambient_noise_async()
+                try:
+                    await adjust_for_ambient_noise_async()
+                    self.logger.debug("Ambient noise adjustment done...")
+                except asyncio.CancelledError:
+                    self.logger.debug("Ambient noise adjustment cancelled...")
 
-            if self.speak:
+            if self.speech_input:
                 self.logger.debug("Adjusting for ambient noise...")
                 asyncio.create_task(adjust_for_ambient_noise_task())
 

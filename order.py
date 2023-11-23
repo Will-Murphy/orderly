@@ -21,7 +21,7 @@ def main():
         help="Whether to use the mock API response (default: False)",
     )
     parser.add_argument(
-        "--speak",
+        "--speech_input",
         type=bool,
         default=False,
         help="Whether or not activate speech responses (default: False)",
@@ -40,7 +40,7 @@ def main():
     menu = Menu.from_file(args.menu_name)
     logger.info(f"Menu: {json.dumps(menu.full_detail, indent=4)} \n")
 
-    sales_agent = SalesAgent(menu, speak=args.speak)
+    sales_agent = SalesAgent(menu, speech_input=args.speech_input)
 
     sales_agent.process_order()
 
