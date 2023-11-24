@@ -4,7 +4,7 @@ import sys
 from models.ordering import Menu
 
 
-def main():
+def pprint_menu():
     if len(sys.argv) != 2:
         print("Usage: python script.py <menu_name>")
     else:
@@ -14,4 +14,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    pprint_menu()

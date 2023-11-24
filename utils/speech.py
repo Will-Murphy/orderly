@@ -5,6 +5,8 @@ import pyttsx3
 import speech_recognition as sr
 from gtts import gTTS
 
+from completion_api import ApiVoices
+
 recognizer = sr.Recognizer()
 microphone = sr.Microphone()
 
@@ -57,7 +59,7 @@ def speak(text: str, filename: str = "order_playback.mp3"):
 def speak_new(client, text: str, filename: str = "order_playback.mp3"):
     response = client.audio.speech.create(
         model="tts-1",
-        voice="alloy",
+        voice=ApiVoices.NOVA.value,
         input=text,
     )
 

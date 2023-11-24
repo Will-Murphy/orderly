@@ -5,7 +5,6 @@ import json
 import os
 import random
 from dataclasses import asdict, dataclass, field
-from functools import wraps
 from typing import Dict, List
 
 from halo import Halo
@@ -143,9 +142,6 @@ class AbstractAgent:
         raise NotImplementedError
 
     def get_system_message(self):
-        raise NotImplementedError
-
-    def get_listen_prompt(self):
         raise NotImplementedError
 
     def add_user_message(self, msg):

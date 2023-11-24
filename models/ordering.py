@@ -231,6 +231,7 @@ class Order(AbstractOrderData):
                 f"{Order.HUMAN_RESPONSE}": {
                     "type": "string",
                     "description": human_res_desc,
+                    "minLength": 10,
                 },
             },
             "required": [
@@ -323,12 +324,6 @@ class SalesAgent(AbstractAgent):
             ),
         }
 
-    def get_listen_prompt(self):
-        return (
-            f"You are a 'smart' server at restaurant {self.menu.restaurant_name} "
-            f"interacting with a customer"
-        )
-
     def get_initial_prompt(self, user_input: str) -> str:
         prompt = f"Here is what the customer has asked for in their own words: \n '{user_input}'. \n"
 
@@ -341,7 +336,7 @@ class SalesAgent(AbstractAgent):
 
     def get_clarification_prompt(self, user_input: str, order: Order) -> str:
         prompt = (
-            f"Some items were not understood correctly of the users order was ambiguous."
+            f"Some items were not understood correctly or the users order was ambiguous."
             f"The items that were not previously recognized from the above menu are: "
             f"\n {human_item_list(order.unrecognized_items)}. \n"
             f"The user has now told use that instead they mean the following: "
@@ -370,7 +365,6 @@ class SalesAgent(AbstractAgent):
         order = await self._initialize_order(initial_input)
 
         api_errors = 0
-
         while not (order.is_complete() and order.is_final()):
             try:
                 if not order.is_complete():
