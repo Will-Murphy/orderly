@@ -28,10 +28,18 @@
 - Implement order finalization
 - Implement order updating
 - Implement Scraping with function calls 
-- Add Priced Order Details to Order Models
 - Start with chineese food restaurant
 - Add prompts as system messages 
+
+# TODO 11/24
 - Cut short when user speaks???
 - add background loop noise???
 - Customers:
     - chick-fil-a tech forward
+    - chineese food
+- Add Priced Order Details to Order Models
+    - current idea is to break each menu item into categories and have a list of:
+    - 1. options that define the base pric
+    - 2. whether or not the options are required (maybe if there is no total price its implied)
+    - 3. add ons that are purely optional and added to the total price
+    - 4. unpriced details the order

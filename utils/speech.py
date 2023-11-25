@@ -5,7 +5,7 @@ import pyttsx3
 import speech_recognition as sr
 from gtts import gTTS
 
-from completion_api import ApiVoices
+from models.api import ApiVoices
 
 recognizer = sr.Recognizer()
 microphone = sr.Microphone()
@@ -56,10 +56,15 @@ def speak(text: str, filename: str = "order_playback.mp3"):
     subprocess.call(["afplay", filename])
 
 
-def speak_new(client, text: str, filename: str = "order_playback.mp3"):
+def speak_new(
+    client,
+    text: str,
+    filename: str = "order_playback.mp3",
+    voice_selection=ApiVoices.ONYX,
+):
     response = client.audio.speech.create(
         model="tts-1",
-        voice=ApiVoices.ONYX.value,
+        voice=voice_selection,
         input=text,
     )
 

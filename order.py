@@ -1,6 +1,8 @@
 import argparse
 import json
 
+from models.api import ApiVoices
+from models.base import DEFAULT_API_VOICE
 from models.ordering import DEFAULT_PERSONALITY_MODIFIER, Menu, SalesAgent, logger
 
 TEST_MENU_DIR = "tests/test_menus"
@@ -32,12 +34,17 @@ def main():
         default=1,
         help="The logging level (default: 1/DEBUG)",
     )
-
     parser.add_argument(
         "--personality",
         type=str,
-        default="",
-        help="The logging level (default: 1/DEBUG)",
+        default=DEFAULT_PERSONALITY_MODIFIER,
+        help="Personality modifier for agent. Usage: <agent instructions> while being <personality>",
+    )
+    parser.add_argument(
+        "--voice",
+        choices=[v.value for v in ApiVoices],
+        default=DEFAULT_API_VOICE,
+        help="Voice selection for agent when interation with users",
     )
 
     args = parser.parse_args()
@@ -50,7 +57,7 @@ def main():
     sales_agent = SalesAgent(
         menu,
         speech_input=args.speech_input,
-        personality_modifier=args.personality or DEFAULT_PERSONALITY_MODIFIER,
+        personality_modifier=args.personality,
     )
 
     sales_agent.process_order()

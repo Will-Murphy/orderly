@@ -204,7 +204,7 @@ class Order(AbstractOrderData):
         unrec_items_desc="A structured mapping of items not directly mentioned in the menu AFTER clarification.",
         single_unrec_name_desc="key user mentioned that was not found in the menu.",
         is_completed_desc="Whether or not the order has been sufficiently clarified",
-        is_finalized_desc="Whether or not the order has been confirmed by the user.",
+        is_finalized_desc="Whether or not the user has given definitive, final confirmation of their order.",
         human_res_desc="A CREATIVE, WITTY GREETING TO THE CUSTOMER",
     ) -> dict:
         return {
@@ -297,7 +297,7 @@ ORDER_FUNCTIONS = {
     },
 }
 
-DEFAULT_PERSONALITY_MODIFIER = "being friendly and helpful"
+DEFAULT_PERSONALITY_MODIFIER = "friendly and helpful"
 
 
 @dataclass
@@ -322,7 +322,7 @@ class SalesAgent(AbstractAgent):
                 f"You are a 'smart' server for {self.menu.restaurant_name} "
                 f"interacting with a customer and mapping their order directly"
                 f"to the following menu items in an attempt to finalize their order"
-                f"while {self.personality_modifier}:\n\n"
+                f"while being {self.personality_modifier}:\n\n"
                 f"{self.menu.full_detail}\n\n"
             ),
         }

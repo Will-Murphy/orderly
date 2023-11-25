@@ -10,7 +10,7 @@ from typing import Dict, List
 from halo import Halo
 from openai import OpenAI
 
-from completion_api import ApiModels
+from models.api import ApiModels, ApiVoices
 from utils.speech import adjust_for_ambient_noise_async, listen, speak_new
 from utils.ux import (
     get_generic_order_waiting_phrases,
@@ -21,6 +21,9 @@ from utils.ux import (
 DEFAULT_MAX_NO_INPUT_RETRIES = 5
 DEFAULT_MAX_API_RETRIES = 5
 
+DEFAULT_API_MODEL = ApiModels.GPT4_T.value
+DEFAULT_API_VOICE = ApiVoices.ONYX.value
+
 
 class ApiResponseException(Exception):
     pass
@@ -28,7 +31,7 @@ class ApiResponseException(Exception):
 
 class NoInputException(Exception):
     pass
-
+ 
 
 @dataclass
 class AbstractOrderData:
@@ -71,7 +74,8 @@ class UsageData:
 
 @dataclass
 class AbstractAgent:
-    api_model: str = field(init=False, default=ApiModels.GPT4_T.value)
+    api_model: str = field(init=False, default=DEFAULT_API_MODEL)
+    voice_selection: str = field(init=True, kw_only=True, default=DEFAULT_API_VOICE)
     message_history: List[Dict] = field(init=False, default_factory=list)
     usage_data: UsageData = field(init=False, default_factory=UsageData)
     max_no_input_retries: int = field(init=False, default=DEFAULT_MAX_NO_INPUT_RETRIES)
@@ -209,7 +213,7 @@ class AbstractAgent:
         ) as speaking_spinner:
             if msg:
                 print(msg + display_summary + "\n\n")
-                speak_new(self.client, msg + speech_summary)
+                speak_new(self.client, msg + speech_summary, voice_selection=self.voice_selection)
 
             if msg and add_to_message_history:
                 self.add_agent_message(msg)
