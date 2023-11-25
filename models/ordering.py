@@ -297,11 +297,14 @@ ORDER_FUNCTIONS = {
     },
 }
 
+DEFAULT_PERSONALITY_MODIFIER = "being friendly and helpful"
+
 
 @dataclass
 class SalesAgent(AbstractAgent):
     menu: Menu
     speech_input: bool = True
+    personality_modifier: str = DEFAULT_PERSONALITY_MODIFIER
     max_error_retries: int = DEFAULT_MAX_API_RETRIES
 
     @property
@@ -319,7 +322,7 @@ class SalesAgent(AbstractAgent):
                 f"You are a 'smart' server for {self.menu.restaurant_name} "
                 f"interacting with a customer and mapping their order directly"
                 f"to the following menu items in an attempt to finalize their order"
-                f"while being friendly and helpful:\n\n"
+                f"while {self.personality_modifier}:\n\n"
                 f"{self.menu.full_detail}\n\n"
             ),
         }
@@ -352,6 +355,7 @@ class SalesAgent(AbstractAgent):
             logger.debug(f"No input error: \n{e}\n")
             self.communicate(
                 "Sorry, it seems I am unable to hear you or that you've stepped away."
+                "Thank you for stopping by!"
             )
             return
 

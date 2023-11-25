@@ -11,6 +11,6 @@ class ApiVoices(Enum):
     ECHO = "echo"
     NOVA = "nova"
     FABLE = "fable"
-    ONYX = "Onyx"
+    ONYX = "onyx"
     ALLOY = "alloy"
     SHIMMER = "shimmer"

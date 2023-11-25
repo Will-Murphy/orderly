@@ -31,3 +31,7 @@
 - Add Priced Order Details to Order Models
 - Start with chineese food restaurant
 - Add prompts as system messages 
+- Cut short when user speaks???
+- add background loop noise???
+- Customers:
+    - chick-fil-a tech forward

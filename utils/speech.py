@@ -59,7 +59,7 @@ def speak(text: str, filename: str = "order_playback.mp3"):
 def speak_new(client, text: str, filename: str = "order_playback.mp3"):
     response = client.audio.speech.create(
         model="tts-1",
-        voice=ApiVoices.NOVA.value,
+        voice=ApiVoices.ONYX.value,
         input=text,
     )
 

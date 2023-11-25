@@ -19,7 +19,7 @@ from utils.ux import (
 )
 
 DEFAULT_MAX_NO_INPUT_RETRIES = 5
-DEFAULT_MAX_API_RETRIES = 3
+DEFAULT_MAX_API_RETRIES = 5
 
 
 class ApiResponseException(Exception):

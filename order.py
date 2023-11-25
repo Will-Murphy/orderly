@@ -1,7 +1,7 @@
 import argparse
 import json
 
-from models.ordering import Menu, SalesAgent, logger
+from models.ordering import DEFAULT_PERSONALITY_MODIFIER, Menu, SalesAgent, logger
 
 TEST_MENU_DIR = "tests/test_menus"
 
@@ -33,6 +33,13 @@ def main():
         help="The logging level (default: 1/DEBUG)",
     )
 
+    parser.add_argument(
+        "--personality",
+        type=str,
+        default="",
+        help="The logging level (default: 1/DEBUG)",
+    )
+
     args = parser.parse_args()
 
     logger.set_level(args.log_level)
@@ -40,7 +47,11 @@ def main():
     menu = Menu.from_file(args.menu_name)
     logger.info(f"Menu: {json.dumps(menu.full_detail, indent=4)} \n")
 
-    sales_agent = SalesAgent(menu, speech_input=args.speech_input)
+    sales_agent = SalesAgent(
+        menu,
+        speech_input=args.speech_input,
+        personality_modifier=args.personality or DEFAULT_PERSONALITY_MODIFIER,
+    )
 
     sales_agent.process_order()
 
