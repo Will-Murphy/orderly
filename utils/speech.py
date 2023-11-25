@@ -60,7 +60,7 @@ def speak_new(
     client,
     text: str,
     filename: str = "order_playback.mp3",
-    voice_selection=ApiVoices.ONYX,
+    voice_selection=ApiVoices.ONYX.value,
 ):
     response = client.audio.speech.create(
         model="tts-1",

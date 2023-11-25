@@ -58,6 +58,7 @@ def main():
         menu,
         speech_input=args.speech_input,
         personality_modifier=args.personality,
+        voice_selection=args.voice,
     )
 
     sales_agent.process_order()

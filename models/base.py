@@ -31,7 +31,7 @@ class ApiResponseException(Exception):
 
 class NoInputException(Exception):
     pass
- 
+
 
 @dataclass
 class AbstractOrderData:
@@ -86,17 +86,21 @@ class AbstractAgent:
     @Halo(spinner="hamburger", color="grey", text="Thinking...")
     def get_func_completion_res(
         self,
-        prompt: str = "",
+        add_user_msg: str = "",
+        add_system_msg: str = "",
         fn_name: str = None,
-        with_message_history=False,
+        with_message_history=True,
         **api_kwargs,
     ):
+        if add_system_msg:
+            self.add_system_message(add_system_msg)
+        if add_user_msg:
+            self.add_user_message(add_user_msg)
+
         messages = [
             self.get_system_message(),
             *(self.message_history if with_message_history else []),
         ]
-        if prompt:
-            messages.append({"role": "user", "content": prompt})
 
         self.logger.debug(f"For response messages: {json.dumps(messages,indent=4)}")
 
@@ -181,7 +185,9 @@ class AbstractAgent:
 
                         listening_spinner.stop()
                         speaking_spinner.start()
-                        speak_new(self.client, err_msg)
+                        speak_new(
+                            self.client, err_msg, voice_selection=self.voice_selection
+                        )
 
                         speaking_spinner.stop()
                         listening_spinner.start()
@@ -213,15 +219,17 @@ class AbstractAgent:
         ) as speaking_spinner:
             if msg:
                 print(msg + display_summary + "\n\n")
-                speak_new(self.client, msg + speech_summary, voice_selection=self.voice_selection)
+                speak_new(
+                    self.client,
+                    msg + speech_summary,
+                    voice_selection=self.voice_selection,
+                )
 
             if msg and add_to_message_history:
                 self.add_agent_message(msg)
             if get_response:
                 user_response = listen_for(speaking_spinner)
                 self.logger.info(f"user response: {user_response}")
-                if add_to_message_history:
-                    self.add_user_message(user_response)
                 return user_response
 
     async def communicate_async(self, *args, **kwargs):

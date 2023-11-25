@@ -204,7 +204,7 @@ class Order(AbstractOrderData):
         unrec_items_desc="A structured mapping of items not directly mentioned in the menu AFTER clarification.",
         single_unrec_name_desc="key user mentioned that was not found in the menu.",
         is_completed_desc="Whether or not the order has been sufficiently clarified",
-        is_finalized_desc="Whether or not the user has given definitive, final confirmation of their order.",
+        is_finalized_desc="Whether or not the user has given DEFINITIVE, FINAL confirmation of their order after it has been sufficiently clarified.",
         human_res_desc="A CREATIVE, WITTY GREETING TO THE CUSTOMER",
     ) -> dict:
         return {
@@ -327,27 +327,6 @@ class SalesAgent(AbstractAgent):
             ),
         }
 
-    def get_initial_prompt(self, user_input: str) -> str:
-        prompt = f"Here is what the customer has asked for in their own words: \n '{user_input}'. \n"
-
-        return prompt
-
-    def get_finalization_prompt(self, user_input: str) -> str:
-        prompt = f"We think the user has finalized their order as a final response they have said: \n '{user_input}'. \n"
-
-        return prompt
-
-    def get_clarification_prompt(self, user_input: str, order: Order) -> str:
-        prompt = (
-            f"Some items were not understood correctly or the users order was ambiguous."
-            f"The items that were not previously recognized from the above menu are: "
-            f"\n {human_item_list(order.unrecognized_items)}. \n"
-            f"The user has now told use that instead they mean the following: "
-            f"\n '{user_input}'\n"
-        )
-
-        return prompt
-
     def process_order(self) -> Order:
         try:
             asyncio.run(self.process_order_async())
@@ -401,12 +380,16 @@ class SalesAgent(AbstractAgent):
 
         return order
 
-    async def _initialize_order(self, user_input: str = "") -> Order:
-        initial_prompt = self.get_initial_prompt(user_input) if user_input else ""
-        logger.debug(f"\nInitialize order prompt: \n {initial_prompt}\n")
+    async def _initialize_order(
+        self, user_input: str = "", addtl_system_msg: str = ""
+    ) -> Order:
+        logger.debug(f"\nInitialize user input: \n {user_input}\n")
 
         response = await self.get_func_completion_res_with_waiting(
-            initial_prompt, "process_user_order", with_message_history=True
+            add_user_msg=user_input,
+            add_system_msg=addtl_system_msg,
+            fn_name="process_user_order",
+            with_message_history=True,
         )
         logger.debug(f"API response: \n{response}\n")
 
@@ -420,11 +403,9 @@ class SalesAgent(AbstractAgent):
             "Sorry, something went wrong processing your request. "
             + random.choice(get_generic_order_waiting_phrases())
         )
-        self.add_system_message(
-            "There was an issue processing the order up to this point, it must be retried."
+        order = await self._initialize_order(
+            addtl_system_msg="There was an issue processing the order up to this point, it must be retried."
         )
-        order = await self._initialize_order()
-
         return order
 
     async def _clarify_order(self, order: Order) -> Order:
@@ -440,19 +421,17 @@ class SalesAgent(AbstractAgent):
                 get_response=True,
                 display_summary=order.get_human_order_summary(),
             )
-            clarficiation_prompt = self.get_clarification_prompt(user_clar_input, order)
-
-            logger.debug(f"\n Clarified prompt: \n {clarficiation_prompt}\n")
+            logger.debug(f"\n Clarify user input: \n {user_clar_input}\n")
             response = await self.get_func_completion_res_with_waiting(
-                clarficiation_prompt, "clarify_user_order", with_message_history=True
+                add_user_msg=user_clar_input,
+                add_system_msg=self.get_clarification_message(order),
+                fn_name="clarify_user_order",
+                with_message_history=True,
             )
             logger.debug(f"API response: \n{response}\n")
 
-            logger.debug(f"Raw Clarfied Order: \n {response} \n")
             order = Order.from_api_response(response, self.menu)
             logger.debug(f"Clarified Order: \n {order} \n")
-
-            logger.debug(f"Input Clarfied Order: \n {order} \n")
 
         return order
 
@@ -463,18 +442,38 @@ class SalesAgent(AbstractAgent):
             speech_summary=order.get_human_order_summary(speech_only=True),
             get_response=True,
         )
-
-        finalization_prompt = self.get_finalization_prompt(final_response)
-
+        logger.debug(f"Finalize user input: {final_response}")
         response = await self.get_func_completion_res_with_waiting(
-            finalization_prompt, "finalize_user_order", with_message_history=True
+            add_user_msg=final_response,
+            add_system_msg=self.get_finalization_message(order),
+            fn_name="finalize_user_order",
+            with_message_history=True,
         )
         logger.debug(f"Finalization API response: \n{response}\n")
 
         finalized_order = Order.from_api_response(response, self.menu)
-        logger.debug(f"Finalized Order from response: \n {finalized_order} \n")
+        logger.debug(f"Finalized Order: \n {finalized_order} \n")
 
         return finalized_order
 
-    def get_display_summary(self, order: Order):
+    def get_display_summary(self, order: Order) -> str:
         return f"{'='*80}\n" + f"{order.get_human_order_summary()} \n" + f"{'='*80}\n"
+
+    def get_finalization_message(self, order: Order) -> str:
+        msg = (
+            f"It seems the following order has been clarified, now we need to finalize it"
+            f"with the user: \n '{order.get_human_order_summary()}'"
+        )
+
+        return msg
+
+    def get_clarification_message(self, order: Order) -> str:
+        msg = (
+            f"Some items were not understood correctly or the users order was ambiguous."
+            f"The current order is: "
+            f"\n {order.get_human_order_summary() if order.menu_items else ''} \n"
+            f"The items mentioned that were not recognized are: "
+            f"\n {human_item_list(order.unrecognized_items)}. \n"
+        )
+
+        return msg
