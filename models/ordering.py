@@ -303,7 +303,7 @@ DEFAULT_PERSONALITY_MODIFIER = "friendly and helpful"
 @dataclass
 class SalesAgent(AbstractAgent):
     menu: Menu
-    speech_input: bool = True
+    use_speech_input: bool = True
     personality_modifier: str = DEFAULT_PERSONALITY_MODIFIER
     max_error_retries: int = DEFAULT_MAX_API_RETRIES
 
@@ -381,13 +381,13 @@ class SalesAgent(AbstractAgent):
         return order
 
     async def _initialize_order(
-        self, user_input: str = "", addtl_system_msg: str = ""
+        self, user_input: str = "", add_system_msg: str = ""
     ) -> Order:
         logger.debug(f"\nInitialize user input: \n {user_input}\n")
 
         response = await self.get_func_completion_res_with_waiting(
             add_user_msg=user_input,
-            add_system_msg=addtl_system_msg,
+            add_system_msg=add_system_msg,
             fn_name="process_user_order",
             with_message_history=True,
         )
@@ -404,7 +404,7 @@ class SalesAgent(AbstractAgent):
             + random.choice(get_generic_order_waiting_phrases())
         )
         order = await self._initialize_order(
-            addtl_system_msg="There was an issue processing the order up to this point, it must be retried."
+            add_system_msg="There was an issue processing the order up to this point, it must be retried."
         )
         return order
 
@@ -461,19 +461,19 @@ class SalesAgent(AbstractAgent):
 
     def get_finalization_message(self, order: Order) -> str:
         msg = (
-            f"It seems the following order has been clarified, now we need to finalize it"
-            f"with the user: \n '{order.get_human_order_summary()}'"
+            f"It seems the following order has been clarified, now we need to finalize it "
+            f"with the user: \n\n '{order.get_human_order_summary()}'"
         )
 
         return msg
 
     def get_clarification_message(self, order: Order) -> str:
         msg = (
-            f"Some items were not understood correctly or the users order was ambiguous."
+            f"Some items were not understood correctly or the users order was ambiguous. "
             f"The current order is: "
-            f"\n {order.get_human_order_summary() if order.menu_items else ''} \n"
+            f"\n\n {order.get_human_order_summary() if order.menu_items else ''} \n\n"
             f"The items mentioned that were not recognized are: "
-            f"\n {human_item_list(order.unrecognized_items)}. \n"
+            f"\n\{human_item_list(order.unrecognized_items)}. \n"
         )
 
         return msg

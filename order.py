@@ -26,7 +26,7 @@ def main():
         "--speech_input",
         type=bool,
         default=False,
-        help="Whether or not activate speech responses (default: False)",
+        help="Whether or not activate speech recognition responses (default: False)",
     )
     parser.add_argument(
         "--log_level",
@@ -56,7 +56,7 @@ def main():
 
     sales_agent = SalesAgent(
         menu,
-        speech_input=args.speech_input,
+        use_speech_input=args.speech_input,
         personality_modifier=args.personality,
         voice_selection=args.voice,
     )

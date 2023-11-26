@@ -12,7 +12,7 @@ def pprint_assistant(agent=None):
         menu = Menu.from_file(menu_name)
 
         if agent is None:
-            agent = SalesAgent(menu, speech_input=False)
+            agent = SalesAgent(menu, use_speech_input=False)
 
         print(
             "\n\system message:\n\n", json.dumps(agent.get_system_message(), indent=4)

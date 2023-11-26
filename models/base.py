@@ -176,7 +176,7 @@ class AbstractAgent:
             with halo_context(
                 spinner="hamburger", color="green", text="Listening..."
             ) as listening_spinner:
-                if self.speech_input:
+                if self.use_speech_input:
                     response = listen(self.logger)
                     no_input_retries = 0
                     while not response:
