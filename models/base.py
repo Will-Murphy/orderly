@@ -169,6 +169,7 @@ class AbstractAgent:
         speech_summary: str = "",
         add_to_message_history=True,
         with_ui_spinner=True,
+        speech_blocking=True,
     ) -> str | None:
         def listen_for(speaking_spinner) -> str:
             speaking_spinner.stop()
@@ -186,7 +187,10 @@ class AbstractAgent:
                         listening_spinner.stop()
                         speaking_spinner.start()
                         speak_new(
-                            self.client, err_msg, voice_selection=self.voice_selection
+                            self.client,
+                            err_msg,
+                            voice_selection=self.voice_selection,
+                            blocking=speech_blocking,
                         )
 
                         speaking_spinner.stop()
@@ -223,6 +227,7 @@ class AbstractAgent:
                     self.client,
                     msg + speech_summary,
                     voice_selection=self.voice_selection,
+                    blocking=speech_blocking,
                 )
 
             if msg and add_to_message_history:
@@ -240,6 +245,7 @@ class AbstractAgent:
             f"\n {random.choice(get_generic_order_waiting_phrases())} \n",
             add_to_message_history=False,
             with_ui_spinner=False,
+            speech_blocking=False,
         )
 
     async def adjust_for_ambient_noise_task(self):

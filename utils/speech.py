@@ -61,6 +61,7 @@ def speak_new(
     text: str,
     filename: str = "order_playback.mp3",
     voice_selection=ApiVoices.ONYX.value,
+    blocking=True,
 ):
     response = client.audio.speech.create(
         model="tts-1",
@@ -71,4 +72,21 @@ def speak_new(
     response.stream_to_file(filename)
 
     # Playing the converted file
-    subprocess.call(["afplay", filename])
+    if blocking:
+        play_mp3(filename)
+    else:
+        play_mp3_non_blocking(filename)
+
+
+def play_mp3_non_blocking(file_path):
+    # Using 'ffplay' as an example. Replace with your preferred player command
+    return subprocess.Popen(["afplay", file_path])
+
+
+def play_mp3(file_path):
+    # Using 'ffplay' as an example. Replace with your preferred player command
+    return subprocess.call(["afplay", file_path])
+
+
+def play_background_music():
+    return play_mp3_non_blocking("assets/catchy_background.mp3")
