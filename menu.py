@@ -15,7 +15,7 @@ from selenium.webdriver.support import ui
 from webdriver_manager.chrome import ChromeDriverManager
 
 from logger import Logger
-from models.base import AbstractAgent, AbstractOrderData
+from models.base import AbstractAgent, AbstractOrderData, ApiResponseException
 
 CHROME_PATH = (
     "/Users/williammurphy/Downloads/Google Chrome.app/Contents/MacOS/Google Chrome"
@@ -37,49 +37,93 @@ class ItemDetails(AbstractOrderData):
         return asdict(self)
 
     @classmethod
-    def get_schema(cls):
+    def get_schema(cls, 
+            desc="Array of priced item details. Should only contain information relevant to the item."
+            "Information should not be repeated between the item and items details", 
+            item_desc="A priced item detail."
+        ):
         return {
             "type": "array",
-            "description": "Array of priced item details. Should only contain information relevant to the item."
-            "Information should not be repeated between the item and items details",
+            "description": desc,
             "items": {
                 "type": "object",
-                "description": "A priced item detail.",
+                "description": item_desc,
                 "properties": {
-                    f"{ItemDetails.NAME}": {"type": "string"},
-                    f"{ItemDetails.DETAIL_PRICE}": {"type": "number"},
+                    f"{cls.NAME}": {"type": "string"},
+                    f"{cls.DETAIL_PRICE}": {"type": "number"},
                 },
             },
-            "required": [f"{ItemDetails.NAME}", f"{ItemDetails.DETAIL_PRICE}"],
+            "required": [f"{cls.NAME}", f"{cls.DETAIL_PRICE}"],
         }
+
+@dataclass
+class Option(ItemDetails):
+    @classmethod
+    def get_schema(self):
+        return super().get_schema(
+            desc="Array of priced options for a given menu item. These replace the base price & should only contain information relevant to the item."
+            "Information should not be repeated between the item and items details",
+            item_desc="a single priced option"
+        )
+
+@dataclass
+class Addon(ItemDetails):
+    @classmethod
+    def get_schema(self):
+        return super().get_schema(
+            desc="Array of priced addons for a given menu item. Does not replace base price of items, but adds on to it",
+            item_desc="a single priced add on"
+        )
+
+@dataclass
+class MenuAddon(ItemDetails):
+    CATEGORY = "category"
+
+    category: str = ""
+
+    @classmethod
+    def get_schema(cls):
+        schema = super().get_schema(
+            desc="Array of priced addons for a given menu. Separate from base menu items",
+            item_desc="a single priced add on"
+        )
+        schema["items"]["properties"]["{cls.CATEGORY}"] = {"type": "string"}
+        schema["required"].append(f"{cls.CATEGORY}")
+        return schema
+        
+
 
 
 @dataclass
 class ScraperItem(AbstractOrderData):
     NAME = "name"
-    DETAILS = "details"
+    OPTIONS = "options"
+    ADDONS = "addons"
     CATEGORY = "category"
     ITEM_PRICE = "item_price"
 
     name: str
     category: str
-    details: List[str]
-    item_price: float
+    options: List[str]
+    addons: List[str]
+    item_price: float = None
 
     def as_dict(self):
         return {
             f"{ScraperItem.NAME}": self.name,
             f"{ScraperItem.ITEM_PRICE}": self.item_price,
             f"{ScraperItem.CATEGORY}": self.category,
-            f"{ScraperItem.DETAILS}": [x.as_dict() for x in self.details],
+            f"{ScraperItem.OPTIONS}": [x.as_dict() for x in self.options],
+            f"{ScraperItem.ADDONS}": [x.as_dict() for x in self.options],
         }
 
     def __post_init__(self, *args, **kwargs):
         self.name = self.name.title()
-        self.details = [ItemDetails(**x) for x in self.details]
+        self.options = [Option(**x) for x in self.options]
+        self.addons = [Addon(**x) for x in self.addons]
 
     def __hash__(self) -> int:
-        return hash((self.name, (hash(x for x in self.details) or 0), self.quantity))
+        return hash((self.name, (hash(x for x in self.options) or 0), self.quantity))
 
     @classmethod
     def get_schema(
@@ -105,15 +149,19 @@ class ScraperItem(AbstractOrderData):
                     "type": ["string", "null"],
                     "description": "The category of the item.",
                 },
-                f"{ScraperItem.DETAILS}": {
-                    **ItemDetails.get_schema(),
+                f"{ScraperItem.OPTIONS}": {
+                    **Option.get_schema(),
                 },
+                f"{ScraperItem.ADDONS}": {
+                    **Addon.get_schema(),
+                }
             },
             "required": [
                 f"{ScraperItem.NAME}",
                 f"{ScraperItem.ITEM_PRICE}",
                 f"{ScraperItem.CATEGORY}",
-                f"{ScraperItem.DETAILS}",
+                f"{ScraperItem.OPTIONS}",
+                f"{ScraperItem.ADDONS}"
             ],
         }
 
@@ -123,19 +171,23 @@ class ScraperMenu(AbstractOrderData):
     RESTAURANT_NAME = "restaurant_name"
     RESTAURANT_ADDRESS = "restaurant_address"
     MENU_ITEMS = "menu_items"
+    MENU_ADDONS = "menu_addons"
 
     restaurant_name: str = None
     restaurant_address: str = None
     menu_items: List[ScraperItem] = field(default_factory=list)
+    menu_addons: List[MenuAddon] = field(default_factory=list)
 
     def __post_init__(self, *args, **kwargs):
         self.menu_items = [ScraperItem(**x) for x in self.menu_items]
+        self.menu_addons = [MenuAddon(**x) for x in self.menu_addons]
 
     def as_dict(self):
         return {
-            f"{ScraperMenu.MENU_ITEMS}": [x.as_dict() for x in self.menu_items],
             f"{ScraperMenu.RESTAURANT_NAME}": self.restaurant_name,
             f"{ScraperMenu.RESTAURANT_ADDRESS}": self.restaurant_address,
+            f"{ScraperMenu.MENU_ITEMS}": [x.as_dict() for x in self.menu_items],
+            f"{ScraperMenu.MENU_ADDONS}": [x.as_dict() for x in self.menu_addons]
         }
 
     @classmethod
@@ -153,6 +205,14 @@ class ScraperMenu(AbstractOrderData):
                         "Items should ONLY be in this list if they can be ordered."
                     ),
                     "items": ScraperItem.get_schema("item name"),
+                },
+                f"{ScraperMenu.MENU_ADDONS}": {
+                    "type": "array",
+                    "description": (
+                        "Array of menu items extracted from html with all fields filled out according the schema."
+                        "Addons should only be added to the list if they are not clearly part of menu items."
+                    ),
+                    "items": MenuAddon.get_schema(),
                 },
                 f"{ScraperMenu.RESTAURANT_NAME}": {
                     "type": ["string", "null"],
@@ -174,6 +234,7 @@ class ScraperMenu(AbstractOrderData):
             self.restaurant_address or other_menu.restaurant_address
         )
         self.menu_items.extend(other_menu.menu_items)
+        self.menu_addons.extend(other_menu.menu_addons)
 
 
 SCRAPING_FUNCTIONS = {
@@ -234,7 +295,7 @@ class ScraperAgent(AbstractAgent):
         chrome_options.binary_location = CHROME_PATH
 
         # Set up WebDriver
-        webdriver_service = Service(ChromeDriverManager().install())
+        webdriver_service = Service(ChromeDriverManager('119.0.6045.19').install())
         driver = webdriver.Chrome(service=webdriver_service, options=chrome_options)
 
         # Fetch the webpage
@@ -266,7 +327,7 @@ class ScraperAgent(AbstractAgent):
 
         return html
 
-    def process_scraped_menu(self, text, chunk_size=2000, max=32000) -> ScraperMenu:
+    def process_scraped_menu(self, text, chunk_size=32000, max=64000) -> ScraperMenu:
         initial_menu = ScraperMenu()
         total = max or len(text)
         i = 0
@@ -288,21 +349,21 @@ class ScraperAgent(AbstractAgent):
             while tries < max_tries:
                 if error is None:
                     response = self.get_func_completion_res(
-                        prompt, "process_scraped_menu"
+                        add_user_msg=prompt, fn_name="process_scraped_menu"
                     )
                     logger.debug(f"Got response from API: \n\n {response}")
                 else:
                     logger.debug(f"Retrying with error: \n\n {error}")
                     retry_prompt = self.get_retry_prompt(current_chunk, error)
                     response = self.get_func_completion_res(
-                        retry_prompt, "process_scraped_menu"
+                        add_user_msg=retry_prompt, fn_name="process_scraped_menu"
                     )
 
                 try:
                     menu_chunk = ScraperMenu.from_api_response(response)
                     logger.debug(f"Turned into menu chunk: \n\n {menu_chunk}")
                     break
-                except Exception:
+                except ApiResponseException:
                     error = traceback.format_exc()
                     logger.error(f"Scraping failed with error: \n\n {error}")
 
