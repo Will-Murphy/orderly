@@ -1,4 +1,7 @@
 from typing import Dict
+import json
+import base64
+import zlib
 
 
 def get_innermost_items(d: dict) -> Dict:
@@ -9,3 +12,12 @@ def get_innermost_items(d: dict) -> Dict:
         else:
             innermost_keys[k] = v
     return innermost_keys
+
+def encode_json(data):
+    # Convert JSON to string and compress
+    compressed_data = zlib.compress(json.dumps(data).encode('utf-8'))
+    # Encode compressed data to base64 for readability
+    return base64.b64encode(compressed_data).decode('utf-8')
+
+
+

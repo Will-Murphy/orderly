@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import datetime
+import inspect
 import json
 import random
 from collections import defaultdict
@@ -16,7 +17,7 @@ from models.base import (
     ApiResponseException,
     NoInputException,
 )
-from utils.utils import get_innermost_items
+from utils.utils import get_innermost_items, encode_json
 from utils.ux import get_generic_order_waiting_phrases
 
 TEST_MENU_DIR = "tests/test_menus"
@@ -70,7 +71,7 @@ class Item(AbstractOrderData):
     @classmethod
     def get_schema(
         cls,
-        name_desc: str = "key from ONLY the innermost keys of each menu item mentioned with the greatest specificity item",
+        name_desc: str = "key from ONLY the innermost keys of each (decoded) menu item mentioned with the greatest specificity item",
     ):
         return {
             "type": "object",
@@ -130,15 +131,17 @@ class Order(AbstractOrderData):
 
     def as_dict(self):
         return {
-            "menu": self.menu.as_dict(),
-            "menu_items": [asdict(m) for m in self.menu_items],
-            "human_response": self.human_response,
+            #"menu": self.menu.as_dict(),
+            #"menu_items": [asdict(m) for m in self.menu_items],
+            #"human_response": self.human_response,
             "processed_order": {k.name: v for k, v in self.processed_order.items()},
-            "total_price": self.total_price,
             "unrecognized_items": [asdict(m) for m in self.unrecognized_items],
             "total_price": self.total_price,
             "is_completed": self.is_completed,
         }
+
+    def as_schema_dict(self):
+        pass
 
     def __post_init__(self):
         self.initialize()
@@ -307,6 +310,8 @@ class SalesAgent(AbstractAgent):
     personality_modifier: str = DEFAULT_PERSONALITY_MODIFIER
     max_error_retries: int = DEFAULT_MAX_API_RETRIES
 
+    COMPRESSION_STR = f"(encoded with {inspect.getsource(encode_json)})"
+
     @property
     def functions(self) -> Dict[str, Dict]:
         return ORDER_FUNCTIONS
@@ -321,9 +326,9 @@ class SalesAgent(AbstractAgent):
             "content": (
                 f"You are a 'smart' server for {self.menu.restaurant_name} "
                 f"interacting with a customer and mapping their order directly"
-                f"to the following menu items in an attempt to finalize their order"
+                f"to the following {self.COMPRESSION_STR} menu items in an attempt to finalize their order"
                 f"while being {self.personality_modifier}:\n\n"
-                f"{self.menu.full_detail}\n\n"
+                f"{encode_json(self.menu.full_detail)}\n\n"
             ),
         }
 
@@ -461,19 +466,17 @@ class SalesAgent(AbstractAgent):
 
     def get_finalization_message(self, order: Order) -> str:
         msg = (
-            f"It seems the following order has been clarified, now we need to finalize it "
-            f"with the user: \n\n '{order.get_human_order_summary()}'"
+            f"It seems the following {self.COMPRESSION_STR} order has been sufficiently clarified, "
+            f"now it must confirmed with the user: \n\n '{encode_json(order.as_dict())}'"
         )
 
         return msg
 
     def get_clarification_message(self, order: Order) -> str:
         msg = (
-            f"Some items were not understood correctly or the users order was ambiguous. "
-            f"The current order is: "
-            f"\n\n {order.get_human_order_summary() if order.menu_items else ''} \n\n"
-            f"The items mentioned that were not recognized are: "
-            f"\n\{human_item_list(order.unrecognized_items)}. \n"
+            f"Some items were not understood correctly or the users order was ambiguous"
+            f"in the following {self.COMPRESSION_STR} order."
+            f"\n\n '{encode_json(order.as_dict())}' \n\n"
         )
 
         return msg
