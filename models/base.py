@@ -21,7 +21,7 @@ from utils.ux import (
 DEFAULT_MAX_NO_INPUT_RETRIES = 5
 DEFAULT_MAX_API_RETRIES = 5
 
-DEFAULT_API_MODEL = ApiModels.GPT4_T.value
+DEFAULT_API_MODEL = ApiModels.GPT4o.value
 DEFAULT_API_VOICE = ApiVoices.ONYX.value
 
 

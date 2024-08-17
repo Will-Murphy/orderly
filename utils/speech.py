@@ -67,6 +67,7 @@ def speak_new(
         model="tts-1",
         voice=voice_selection,
         input=text,
+        speed=1.4
     )
 
     response.stream_to_file(filename)
